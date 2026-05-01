@@ -634,25 +634,39 @@ async function startCamera(){
     $('cam-status').textContent = '⚠️ Librairie scan non chargée (vérifie ta connexion)';
     return;
   }
+  $('cam-status').textContent = '⏳ Démarrage caméra…';
   try{
-    // Limiter aux formats parapharma : EAN_13 surtout, plus EAN_8 / UPC / Code128
+    // Tous les formats de codes-barres courants en parapharmacie
     const hints = new Map();
     const fmts = [
-      ZXing.BarcodeFormat.EAN_13,
-      ZXing.BarcodeFormat.EAN_8,
-      ZXing.BarcodeFormat.UPC_A,
-      ZXing.BarcodeFormat.UPC_E,
-      ZXing.BarcodeFormat.CODE_128,
+      ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
+      ZXing.BarcodeFormat.UPC_A,  ZXing.BarcodeFormat.UPC_E,
+      ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39,
+      ZXing.BarcodeFormat.CODE_93, ZXing.BarcodeFormat.ITF,
+      ZXing.BarcodeFormat.CODABAR,
     ];
     hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, fmts);
     hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-    zxingReader = new ZXing.BrowserMultiFormatReader(hints, 200);
+    // Scan toutes les 100ms (au lieu de 200ms) → plus réactif
+    zxingReader = new ZXing.BrowserMultiFormatReader(hints, 100);
 
-    $('cam-status').textContent = 'Cherche un code-barres…';
+    let frameCount = 0;
+    const updateStatus = () => {
+      const dots = '.'.repeat((frameCount % 3) + 1);
+      $('cam-status').textContent = `🔍 Recherche${dots} (place le code dans le cadre)`;
+    };
+
     await zxingReader.decodeFromConstraints(
-      {video: {facingMode: {ideal: 'environment'}, width:{ideal:1280}, height:{ideal:720}}},
+      {
+        video: {
+          facingMode: {ideal:'environment'},
+          width:{ideal:1920}, height:{ideal:1080},  // HD pour mieux lire
+          focusMode:'continuous',
+        }
+      },
       'video',
       (result, err) => {
+        frameCount++;
         if(result){
           const ean = result.getText();
           const now = Date.now();
@@ -660,12 +674,15 @@ async function startCamera(){
             lastEan = ean; lastEanTime = now;
             onEanDetected(ean);
           }
+        } else if(frameCount % 5 === 0) {
+          updateStatus();  // mise à jour anim "..."
         }
       }
     );
+    $('cam-status').textContent = '🔍 Caméra prête — pointe sur un code-barres';
   }catch(err){
-    console.error(err);
-    $('cam-status').textContent = '🔒 Caméra refusée — utilise Saisir';
+    console.error('Erreur scan:', err);
+    $('cam-status').textContent = '🔒 Caméra refusée — utilise "⌨ Saisir"';
   }
 }
 
