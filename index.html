@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Merchi — Outils</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,Arial,sans-serif;background:linear-gradient(135deg,#2E6B7A,#1a4a5a);color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.wrap{max-width:520px;width:100%}
+.logo{font-size:18px;font-weight:700;letter-spacing:6px;color:#E8A838;text-align:center;margin-bottom:6px}
+.title{font-size:24px;font-weight:700;text-align:center;margin-bottom:8px}
+.sub{font-size:13px;opacity:.75;text-align:center;margin-bottom:30px}
+.card{background:rgba(255,255,255,.1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:20px;margin-bottom:14px;text-decoration:none;color:#fff;display:block;transition:.2s}
+.card:hover{background:rgba(255,255,255,.18);transform:translateY(-2px)}
+.card-icon{font-size:28px;margin-bottom:8px}
+.card-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.card-desc{font-size:12px;opacity:.75;line-height:1.6}
+.footer{text-align:center;font-size:11px;opacity:.5;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">M E R C H I</div>
+  <div class="title">Outils navigateur</div>
+  <div class="sub">Aucun serveur, aucune installation</div>
+
+  <a href="testscan.html" class="card">
+    <div class="card-icon">📷</div>
+    <div class="card-title">Scanner produits</div>
+    <div class="card-desc">Scan EAN sur téléphone — choisis le meuble, le plateau, et scanne les produits</div>
+  </a>
+
+  <a href="testwebapp.html" class="card">
+    <div class="card-icon">📊</div>
+    <div class="card-title">Rapport heatmap</div>
+    <div class="card-desc">Glisse DXF + JSON + ventes → rapport complet 3 onglets</div>
+  </a>
+
+  <div class="footer">Merchandising des grandes surfaces, adapté à votre officine</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Merchi — Rapport</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--teal:#2E6B7A;--gold:#E8A838;--bg:#f5f4f0;--border:#e5e5e0;--dark:#1a1a1a}
+body{font-family:system-ui,Arial,sans-serif;background:var(--bg);color:var(--dark);font-size:13px}
+
+/* ── HEADER ── */
+.hdr{background:var(--teal);padding:10px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{font-size:15px;font-weight:700;letter-spacing:4px;color:var(--gold);cursor:pointer}
+.hdr-sub{font-size:12px;color:rgba(255,255,255,.7);flex:1}
+.badge-red{background:#D32F2F;color:#fff;font-size:10px;font-weight:700;padding:2px 9px;border-radius:10px;letter-spacing:.3px}
+.badge-gray{background:#607D8B;color:#fff;font-size:10px;font-weight:700;padding:2px 9px;border-radius:10px}
+.btn{padding:9px 22px;border-radius:7px;border:none;cursor:pointer;font-size:12.5px;font-weight:700;transition:.15s}
+.btn-teal{background:var(--teal);color:#fff}.btn-teal:hover{filter:brightness(1.1)}
+.btn-teal:disabled{opacity:.4;cursor:not-allowed}
+.btn-outline{background:#fff;color:var(--teal);border:1.5px solid var(--teal)}
+.btn-outline:hover{background:#f0f8f9}
+.btn-print{background:#fff;color:#333;border:1.5px solid #ccc}
+.btn-print:hover{background:#f5f5f5}
+
+/* ── UPLOAD PHASE ── */
+#phase-upload{max-width:680px;margin:0 auto;padding:32px 20px}
+.drop-zone{border:2px dashed var(--border);border-radius:10px;padding:22px 16px;text-align:center;background:#fff;margin-bottom:12px;transition:.2s;cursor:pointer;position:relative}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--teal);background:#f0f8f9}
+.drop-zone input{display:none}
+.drop-name{font-size:12px;font-weight:700;color:var(--teal);margin-top:4px}
+.drop-optional{font-size:10px;color:#aaa;margin-top:2px}
+.log-box{background:#1a1a1a;color:#a8e6a3;font-family:monospace;font-size:11.5px;padding:14px 16px;border-radius:8px;margin-top:16px;min-height:60px;max-height:200px;overflow-y:auto;line-height:1.7}
+.log-err{color:#ff8a80}.log-warn{color:#FFD54F}.log-ok{color:#a8e6a3}.log-info{color:#80d8ff}
+.upload-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center}
+
+/* ── RAPPORT PHASE ── */
+#phase-rapport{display:none}
+.tab-nav{display:flex;background:#fff;border-bottom:2px solid var(--border);gap:0}
+.tab-btn{padding:11px 22px;border:none;background:none;font-size:12.5px;font-weight:600;color:#888;cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:.12s}
+.tab-btn:hover{color:var(--teal)}.tab-btn.active{color:var(--teal);border-bottom-color:var(--teal)}
+.tab-panel{display:none}.tab-panel.active{display:flex}
+.disclaimer{background:#fff3e0;border-left:4px solid #F57C00;padding:8px 16px;font-size:11px;color:#E65100}
+
+/* ── PLAN ── */
+.map-area{flex:1;overflow:auto;background:#d6d3cb;display:flex;align-items:center;justify-content:center;padding:16px;min-height:calc(100vh - 108px)}
+.sidebar{width:270px;background:#fff;border-left:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;flex-shrink:0;max-height:calc(100vh - 108px)}
+.sb-section{padding:12px 14px;border-bottom:1px solid var(--border)}
+.sb-title{font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--teal);margin-bottom:8px}
+.leg-item{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:5px;cursor:pointer;font-size:12px;margin-bottom:2px}
+.leg-item:hover{background:var(--bg)}.leg-item.factive{background:var(--bg);font-weight:700}
+.leg-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.toggle-wrap{display:flex;gap:3px;background:rgba(0,0,0,.12);border-radius:6px;padding:3px}
+.toggle-btn{padding:4px 14px;border-radius:4px;border:none;font-size:11px;font-weight:700;cursor:pointer;color:rgba(0,0,0,.5);background:transparent;transition:.15s}
+.toggle-btn.active{background:var(--teal);color:#fff}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px}
+.metric-card{background:var(--bg);border-radius:6px;padding:7px;text-align:center}
+.metric-val{font-size:15px;font-weight:700;color:var(--teal)}
+.metric-lbl{font-size:9.5px;color:#888;margin-top:1px}
+.perf-bar{margin-top:8px;padding:6px 10px;border-radius:5px;font-size:11.5px;font-weight:700}
+.plat-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:11px}
+.plat-table th{background:var(--bg);padding:4px 5px;text-align:left;color:#888;font-size:9.5px;text-transform:uppercase;border-bottom:1px solid var(--border)}
+.plat-table td{padding:4px 5px;border-bottom:1px solid var(--border);vertical-align:top}
+.stat-row{display:flex;justify-content:space-between;padding:3px 0;font-size:12px}
+.stat-val{font-weight:700;color:var(--teal)}
+.meuble-rect{transition:.15s}
+.meuble:hover .meuble-rect{stroke-width:3;fill-opacity:.5}
+.meuble.selected .meuble-rect{stroke-width:3.5;fill-opacity:.6}
+
+/* ── VENTES ── */
+.ventes-layout{display:flex;flex-direction:column;width:100%;padding:20px 24px;gap:20px;max-height:calc(100vh - 108px);overflow-y:auto}
+.ventes-row{display:flex;gap:20px;flex-wrap:wrap}
+.chart-card{background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 1px 6px rgba(0,0,0,.07);flex:1;min-width:300px}
+.chart-title{font-weight:700;font-size:13px;color:var(--teal);margin-bottom:2px}
+.chart-sub{font-size:11px;color:#aaa;margin-bottom:10px}
+.kpi-row{display:flex;gap:12px;flex-wrap:wrap}
+.kpi-card{background:#fff;border-radius:10px;padding:14px 18px;box-shadow:0 1px 6px rgba(0,0,0,.07);flex:1;min-width:120px;text-align:center}
+.kpi-val{font-size:22px;font-weight:700;color:var(--teal)}
+.kpi-lbl{font-size:11px;color:#888;margin-top:3px}
+.ventes-table{width:100%;border-collapse:collapse;font-size:12px}
+.ventes-table th{background:var(--teal);color:#fff;padding:7px 10px;text-align:left;font-size:11px}
+.ventes-table td{padding:6px 10px;border-bottom:1px solid var(--border)}
+.ventes-table tr:hover td{background:#f0f5f6}
+.bar-cell{position:relative;height:14px;background:#edf4f6;border-radius:3px;overflow:hidden;min-width:60px}
+.bar-fill{position:absolute;left:0;top:0;height:100%;border-radius:3px}
+
+/* ── RECOMMANDATIONS ── */
+.reco-layout{display:flex;flex-direction:column;width:100%;padding:20px 24px;gap:16px;max-height:calc(100vh - 108px);overflow-y:auto}
+.reco-card{background:#fff;border-radius:10px;padding:14px 16px;box-shadow:0 1px 6px rgba(0,0,0,.07);border-left:4px solid #ccc}
+.reco-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.reco-titre{font-weight:700;font-size:13px;flex:1}
+.reco-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.badge-eleve{background:#fce4ec;color:#c62828}.badge-moyen{background:#fff8e1;color:#f57f17}
+.reco-action{display:inline-block;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:2px 10px;font-size:11px;font-weight:600;color:var(--teal)}
+.reco-gain{font-size:11px;color:#aaa;margin-top:4px}
+.reco-detail{font-size:12px;color:#555;line-height:1.6;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)}
+.gap-table{width:100%;border-collapse:collapse;font-size:12px}
+.gap-table th{background:var(--teal);color:#fff;padding:7px 10px;text-align:left;font-size:11px}
+.gap-table td{padding:6px 10px;border-bottom:1px solid var(--border)}
+.gap-pos{color:#2e7d32;font-weight:700}.gap-neg{color:#c62828;font-weight:700}
+
+@media print{
+  #phase-upload{display:none!important}
+  .tab-nav,.hdr-actions{display:none!important}
+  .tab-panel{display:flex!important}
+  .map-area,.sidebar,.ventes-layout,.reco-layout{max-height:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- PHASE 1 : UPLOAD                                          -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="phase-upload">
+
+  <div class="hdr" style="border-radius:10px 10px 0 0;margin-bottom:0">
+    <div class="logo">M E R C H I</div>
+    <div class="hdr-sub">Rapport officine — Zéro serveur, zéro Python</div>
+    <span class="badge-gray">ZÉRO SERVEUR</span>
+  </div>
+
+  <div style="background:#fff;border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:20px 20px 8px;margin-bottom:20px">
+    <p style="color:#666;font-size:12px;line-height:1.7;margin-bottom:16px">
+      Glisse tes 3 fichiers ci-dessous et clique <strong>Générer le rapport</strong>.<br>
+      Le CSV ventes est optionnel — sans lui, le rapport s'affiche avec des données fictives de démonstration.
+    </p>
+
+    <div class="drop-zone" id="drop-dxf" onclick="document.getElementById('inp-dxf').click()"
+         ondragover="ev(event)" ondrop="dropFile(event,'dxf')">
+      <div style="font-size:24px">📐</div>
+      <div style="font-weight:700;color:var(--teal)">Plan DXF</div>
+      <div style="font-size:11px;color:#888">Export SketchUp .dxf</div>
+      <div class="drop-name" id="name-dxf">Aucun fichier</div>
+      <input type="file" id="inp-dxf" accept=".dxf" onchange="loadFile(this,'dxf')">
+    </div>
+
+    <div class="drop-zone" id="drop-json" onclick="document.getElementById('inp-json').click()"
+         ondragover="ev(event)" ondrop="dropFile(event,'json')">
+      <div style="font-size:24px">📋</div>
+      <div style="font-weight:700;color:var(--teal)">JSON calculateur</div>
+      <div style="font-size:11px;color:#888">Export du calculateur meubles</div>
+      <div class="drop-name" id="name-json">Aucun fichier</div>
+      <input type="file" id="inp-json" accept=".json" onchange="loadFile(this,'json')">
+    </div>
+
+    <div class="drop-zone" id="drop-csv" onclick="document.getElementById('inp-csv').click()"
+         ondragover="ev(event)" ondrop="dropFile(event,'csv')">
+      <div style="font-size:24px">📊</div>
+      <div style="font-weight:700;color:var(--teal)">CSV ventes <span style="color:#aaa;font-weight:400">(optionnel)</span></div>
+      <div style="font-size:11px;color:#888">Format : id_meuble,ca_mois,qte_mois — une ligne par meuble</div>
+      <div class="drop-name" id="name-csv">Non fourni — données fictives utilisées</div>
+      <div class="drop-optional">Sans ce fichier : démonstration avec données fictives ⚠️</div>
+      <input type="file" id="inp-csv" accept=".csv,.txt" onchange="loadFile(this,'csv')">
+    </div>
+
+    <div class="upload-actions">
+      <button class="btn btn-teal" id="btn-gen" onclick="generer()" disabled>🔍 Générer le rapport</button>
+      <button class="btn btn-outline" onclick="modeDemo()">▶ Mode démo (fictif)</button>
+      <span style="font-size:11px;color:#aaa">Mode démo = DXF + JSON requis, ventes fictives automatiques</span>
+    </div>
+
+    <div class="log-box" id="log">En attente des fichiers…</div>
+  </div>
+
+  <div style="font-size:11px;color:#aaa;text-align:center;padding:8px">
+    Format CSV ventes attendu (avec ou sans en-tête) :<br>
+    <code style="background:#f0f0f0;padding:2px 8px;border-radius:4px">M01,4800,530</code>&nbsp;
+    <code style="background:#f0f0f0;padding:2px 8px;border-radius:4px">G01_FA,3200,430</code>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- PHASE 2 : RAPPORT                                         -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="phase-rapport">
+
+  <div class="hdr">
+    <div class="logo" onclick="retourUpload()" title="Retour">M E R C H I</div>
+    <div class="hdr-sub" id="hdr-officine">Rapport</div>
+    <div class="hdr-actions" style="display:flex;gap:8px">
+      <button class="btn btn-print" onclick="window.print()">🖨 Imprimer / PDF</button>
+      <button class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.4)" onclick="retourUpload()">↩ Nouveau</button>
+    </div>
+  </div>
+
+  <div class="disclaimer" id="disclaimer-bar"></div>
+
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="showTab('plan',this)">🗺 Plan heatmap</button>
+    <button class="tab-btn" onclick="showTab('ventes',this)">📈 Ventes</button>
+    <button class="tab-btn" onclick="showTab('recos',this)">💡 Recommandations</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-plan">
+    <div class="map-area" id="plan-svg-area"></div>
+    <div class="sidebar" id="plan-sidebar"></div>
+  </div>
+
+  <div class="tab-panel" id="tab-ventes">
+    <div class="ventes-layout" id="ventes-content"></div>
+  </div>
+
+  <div class="tab-panel" id="tab-recos">
+    <div class="reco-layout" id="recos-content"></div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+// ═════════════════════════════════════════════════════════════════
+// CONSTANTES
+// ═════════════════════════════════════════════════════════════════
+
+// ⚠️ FICTIF — saisonnalité inventée pour prototype de validation
+const SAISONNALITE = [0.82,0.78,0.90,0.95,1.05,1.10,1.15,1.08,1.00,1.02,1.08,1.07];
+const MOIS_LABELS  = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
+
+// ⚠️ FICTIF — benchmark national inventé — NE PAS RÉUTILISER EN PRODUCTION
+// Source réelle à connecter : GERS, IRI/Nielsen, données syndicales officiales
+const BENCHMARK_NATIONAL = {
+  DERMOCOSMETIQUE:  {part:28.0, ca_ml:420, croissance:4.2},
+  NUTRITION_SANTE:  {part:22.0, ca_ml:310, croissance:6.8},
+  HYGIENE:          {part:18.0, ca_ml:280, croissance:1.5},
+  NATUREL_BIEN_ETRE:{part:10.0, ca_ml:260, croissance:8.1},
+  BEBE_MATERNITE:   {part: 8.0, ca_ml:350, croissance:-1.2},
+  ORTHOPEDIE:       {part: 6.0, ca_ml:190, croissance:2.3},
+  IMPULSION:        {part: 4.5, ca_ml:480, croissance:3.0},
+  COMPTOIR:         {part: 2.5, ca_ml:520, croissance:1.8},
+  NON_ATTRIBUE:     {part: 1.0, ca_ml:100, croissance:0.0},
+};
+
+// ⚠️ FICTIF — CA par meuble par défaut (si pas de CSV)
+const FICTIF_CA = {
+  M01:[4800,530], M02:[3000,220], M03:[2400,350], M04:[2200,320],
+  G01_FA:[3200,430], G01_FB:[900,90],
+  G02_FA:[2200,160], G02_FB:[700,100],
+  TG01:[400,80], BV01:[70,18], BV02:[60,15],
+};
+
+const GF_COLORS = {
+  DERMOCOSMETIQUE:'#2E6B7A', NUTRITION_SANTE:'#00897B', HYGIENE:'#7B1FA2',
+  BEBE_MATERNITE:'#C2185B', NATUREL_BIEN_ETRE:'#558B2F', ORTHOPEDIE:'#E65100',
+  IMPULSION:'#AD1457', COMPTOIR:'#5D4037', NON_ATTRIBUE:'#9E9E9E',
+};
+const GF_LABELS = {
+  DERMOCOSMETIQUE:'Dermo-cosmétique', NUTRITION_SANTE:'Nutrition & Santé',
+  HYGIENE:'Hygiène', BEBE_MATERNITE:'Bébé & Maternité',
+  NATUREL_BIEN_ETRE:'Naturel & Bien-être', ORTHOPEDIE:'Orthopédie / MAD',
+  IMPULSION:'Impulsion', COMPTOIR:'Comptoir', NON_ATTRIBUE:'Non attribué',
+};
+const GF_MAP = {
+  DERMOCOSMETIQUE:'DERMOCOSMETIQUE', DERMO_COSMETIQUE:'DERMOCOSMETIQUE',
+  HYGIENE:'HYGIENE', NUTRITION_SANTE:'NUTRITION_SANTE',
+  BEBE_MATERNITE:'BEBE_MATERNITE', NATUREL_BIEN_ETRE:'NATUREL_BIEN_ETRE',
+  ORTHOPEDIE:'ORTHOPEDIE', IMPULSION:'IMPULSION', COMPTOIR:'COMPTOIR',
+};
+const PERF_COLORS = [
+  [1.5,'#D32F2F','Très chaud'],[1.2,'#F57C00','Chaud'],
+  [0.8,'#FBC02D','Neutre'],[0.5,'#1976D2','Froid'],[0.0,'#0D47A1','Très froid'],
+];
+const MEUBLE_RE = /^(M|G|TG|ML|CO|TA|GC|MO|LM|GO|BC|BV)\d/i;
+
+// ═════════════════════════════════════════════════════════════════
+// GESTION FICHIERS
+// ═════════════════════════════════════════════════════════════════
+let FILES = {dxf:null, json:null, csv:null};
+
+function ev(e){e.preventDefault();}
+function dropFile(e,type){e.preventDefault();const f=e.dataTransfer.files[0];if(f)readFile(f,type);}
+function loadFile(inp,type){const f=inp.files[0];if(f)readFile(f,type);}
+function readFile(file,type){
+  const r=new FileReader();
+  r.onload=e=>{
+    FILES[type]={name:file.name,content:e.target.result};
+    document.getElementById('name-'+type).textContent=file.name;
+    document.getElementById('drop-'+type).style.borderColor='var(--teal)';
+    log(`📂 ${type.toUpperCase()} chargé : ${file.name}`,'ok');
+    checkReady();
+  };
+  r.readAsText(file);
+}
+function checkReady(){
+  document.getElementById('btn-gen').disabled = !(FILES.dxf && FILES.json);
+}
+
+// ═════════════════════════════════════════════════════════════════
+// LOG
+// ═════════════════════════════════════════════════════════════════
+function log(msg,cls=''){
+  const box=document.getElementById('log');
+  if(!box) return;
+  const d=document.createElement('div');
+  d.className='log-'+cls; d.textContent=msg;
+  box.appendChild(d); box.scrollTop=box.scrollHeight;
+}
+function clearLog(){const b=document.getElementById('log');if(b)b.innerHTML='';}
+
+// ═════════════════════════════════════════════════════════════════
+// PARSEUR DXF (JS pur — zéro dépendance)
+// ═════════════════════════════════════════════════════════════════
+function parseDXF(text) {
+  const lines=text.split(/\r?\n/), n=lines.length;
+  let i=0;
+  const blocks={}, inserts=[], wallLines=[];
+
+  function readEntity(type){
+    const e={type,layer:'',x:0,y:0,z:0,x2:0,y2:0,z2:0,angle:0,name:'',sx:1,sy:1};
+    while(i<n){
+      const gc=parseInt(lines[i]?.trim());
+      if(isNaN(gc)){i++;continue;}
+      const gv=lines[i+1]?.trim()||''; i+=2;
+      if(gc===0){i-=2;break;}
+      if(gc===8) e.layer=gv; if(gc===2) e.name=gv;
+      if(gc===10)e.x=parseFloat(gv)||0; if(gc===20)e.y=parseFloat(gv)||0; if(gc===30)e.z=parseFloat(gv)||0;
+      if(gc===11)e.x2=parseFloat(gv)||0;if(gc===21)e.y2=parseFloat(gv)||0;if(gc===31)e.z2=parseFloat(gv)||0;
+      if(gc===50)e.angle=parseFloat(gv)||0;
+      if(gc===41)e.sx=parseFloat(gv)||1; if(gc===42)e.sy=parseFloat(gv)||1;
+    }
+    return e;
+  }
+
+  function parseBlocks(){
+    let cur=null;
+    while(i<n){
+      const c=lines[i]?.trim();
+      if(c==='0'){
+        const t=lines[i+1]?.trim();
+        if(t==='ENDSEC'){i+=2;break;}
+        if(t==='BLOCK'){
+          i+=2; cur={name:'',layer:'',entities:[]};
+          while(i<n){const gc=parseInt(lines[i]?.trim());if(isNaN(gc)){i++;continue;}const gv=lines[i+1]?.trim()||'';i+=2;if(gc===0){i-=2;break;}if(gc===2)cur.name=gv;if(gc===8)cur.layer=gv;}
+          if(cur.name)blocks[cur.name]=cur; continue;
+        }
+        if(t==='ENDBLK'){i+=2;cur=null;continue;}
+        if((t==='LINE'||t==='INSERT')&&cur){i+=2;cur.entities.push(readEntity(t));continue;}
+      }
+      i++;
+    }
+  }
+
+  function parseEntities(){
+    while(i<n){
+      const c=lines[i]?.trim();
+      if(c==='0'){
+        const t=lines[i+1]?.trim();
+        if(t==='ENDSEC'||t==='EOF'){i+=2;break;}
+        if(t==='INSERT'){i+=2;inserts.push(readEntity('INSERT'));continue;}
+        if(t==='LINE'){i+=2;const e=readEntity('LINE');if(e.layer==='0'||e.layer.toLowerCase()==='mur')wallLines.push(e);continue;}
+      }
+      i++;
+    }
+  }
+
+  while(i<n){
+    const raw=lines[i]?.trim();
+    if(raw===undefined){i++;continue;}
+    if(raw==='0'&&lines[i+1]?.trim()==='SECTION'&&lines[i+2]?.trim()==='2'){
+      const s=lines[i+3]?.trim();
+      if(s==='BLOCKS'){i+=4;parseBlocks();continue;}
+      if(s==='ENTITIES'){i+=4;parseEntities();continue;}
+    }
+    i++;
+  }
+  return {blocks,inserts,wallLines};
+}
+
+function applyTransform(x,y,ix,iy,angleDeg){
+  const r=angleDeg*Math.PI/180;
+  return [x*Math.cos(r)-y*Math.sin(r)+ix, x*Math.sin(r)+y*Math.cos(r)+iy];
+}
+
+function getBlockLines(blocks,blockName,ix,iy,rot,depth=0){
+  if(depth>5)return[];
+  const block=blocks[blockName]; if(!block)return[];
+  const res=[];
+  for(const e of block.entities){
+    if(e.type==='LINE'){
+      if(Math.abs((e.z2||0)-(e.z||0))>1)continue;
+      const [x1,y1]=applyTransform(e.x,e.y,ix,iy,rot);
+      const [x2,y2]=applyTransform(e.x2||e.x,e.y2||e.y,ix,iy,rot);
+      res.push([x1,y1,x2,y2]);
+    } else if(e.type==='INSERT'){
+      const [nx,ny]=applyTransform(e.x,e.y,ix,iy,rot);
+      res.push(...getBlockLines(blocks,e.name,nx,ny,(rot+(e.angle||0))%360,depth+1));
+    }
+  }
+  return res;
+}
+
+function dxfToCalcId(layer){
+  const s=layer.toUpperCase();
+  let m=s.match(/^([A-Z]+)(\d+)_(FA|FB)$/);
+  if(m)return`${m[1]}${String(parseInt(m[2])).padStart(2,'0')}_${m[3]}`;
+  m=s.match(/^([A-Z]+)(\d+)$/);
+  if(m)return`${m[1]}${String(parseInt(m[2])).padStart(2,'0')}`;
+  return layer;
+}
+
+function normalizeGF(raw){
+  if(!raw)return'NON_ATTRIBUE';
+  const s=raw.toUpperCase().replace(/\s+/g,'_')
+    .replace(/[ÉÈÊË]/g,'E').replace(/[ÀÂÄÃ]/g,'A').replace(/[ÔÖ]/g,'O');
+  return GF_MAP[s]||'NON_ATTRIBUE';
+}
+
+// ═════════════════════════════════════════════════════════════════
+// PARSEUR CSV VENTES
+// Format: id_meuble,ca_mois,qte_mois (avec ou sans en-tête)
+// ═════════════════════════════════════════════════════════════════
+function parseCSV(text){
+  const map={};
+  for(const rawLine of text.split(/\r?\n/)){
+    const line=rawLine.trim();
+    if(!line||line.startsWith('#'))continue;
+    const cols=line.split(/[,;	]/);
+    if(cols.length<2)continue;
+    const id=cols[0].trim().toUpperCase();
+    const ca=parseFloat(cols[1]);
+    const qte=cols[2]?parseFloat(cols[2]):0;
+    if(isNaN(ca))continue; // ligne d'en-tête ou invalide
+    map[id]=[ca,qte||0];
+  }
+  return map;
+}
+
+// ═════════════════════════════════════════════════════════════════
+// PERFORMANCE
+// ═════════════════════════════════════════════════════════════════
+function perfColor(ratio){
+  for(const [thr,col,lbl] of PERF_COLORS) if(ratio>=thr) return [col,lbl];
+  return ['#0D47A1','Très froid'];
+}
+
+// ═════════════════════════════════════════════════════════════════
+// FUSION MEUBLES
+// ═════════════════════════════════════════════════════════════════
+function fusionnerMeubles(dxf,calc,ventesMap,usedFictif){
+  const calcById={};
+  for(const m of (calc.meubles||[])) calcById[m.id]=m;
+
+  const meurLines=[],entreeLines=[],meubles=[];
+
+  for(const ins of dxf.inserts){
+    const layer=ins.layer||'';
+    if(!layer||['0','DEFPOINTS'].includes(layer.toUpperCase()))continue;
+    const lines=getBlockLines(dxf.blocks,ins.name,ins.x,ins.y,ins.angle||0);
+    if(layer.toLowerCase()==='mur'){meurLines.push(...lines);}
+    else if(layer.toLowerCase().includes('entr')){entreeLines.push(...lines);}
+    else if(MEUBLE_RE.test(layer)){
+      const calcId=dxfToCalcId(layer);
+      const info=calcById[calcId]||{};
+      const gf=normalizeGF(info.grande_famille);
+      const [caRaw,qteRaw]=ventesMap[calcId]||ventesMap[calcId.toUpperCase()]||[0,0];
+      const ca=caRaw||0, qte=qteRaw||0;
+      const prixMoy=qte>0?Math.round(ca/qte*100)/100:0;
+      const largM=(info.largeur_cm||133)/100;
+      const nbPl=info.nb_plateaux||5;
+      const linDev=Math.round(largM*nbPl*100)/100;
+      const caMl=linDev>0?Math.round(ca/linDev):0;
+      // Saisonnalité mensuelle
+      const r=0.03;
+      const caMensuel=SAISONNALITE.map(s=>Math.round(ca*s*(1+(Math.random()*2-1)*r)));
+      const caAnnuel=caMensuel.reduce((a,b)=>a+b,0);
+      // Plateaux
+      const platsRaw=info.plateaux||[];
+      const plsAvec=platsRaw.filter(p=>p.produits?.length);
+      const nbPlR=plsAvec.length||1;
+      const caPl=ca>0?Math.round(ca/nbPlR):0;
+      const qtePl=qte>0?Math.round(qte/nbPlR):0;
+      const plateaux=platsRaw.map(p=>{
+        const prods=p.produits||[];
+        const gamme=(prods[0]?.rattache_gamme)||info.gamme||'—';
+        return {numero:p.numero,gamme,produits:prods.map(pr=>pr.nom||'').filter(Boolean),ca:prods.length?caPl:0,qte:prods.length?qtePl:0};
+      });
+      meubles.push({
+        dxfId:layer,calcId,lines,gf,
+        famille:info.famille||'',gamme:info.gamme||'',
+        type:info.type||'',hauteur:info.hauteur_cm||0,largeur:info.largeur_cm||0,
+        nbPlateaux:nbPl,nbProduits:platsRaw.reduce((a,p)=>a+(p.produits?.length||0),0),
+        matched:!!info.type,
+        ca,qte,prixMoy,linDev,caMl,caPl,
+        caMensuel,caAnnuel,plateaux,
+        color:GF_COLORS[gf]||'#9E9E9E',
+      });
+    }
+  }
+
+  // Lignes murs depuis wallLines directes
+  for(const e of dxf.wallLines){
+    if(Math.abs((e.z2||0)-(e.z||0))<1) meurLines.push([e.x,e.y,e.x2||e.x,e.y2||e.y]);
+  }
+
+  // Ratio performance
+  const linTotal=meubles.reduce((a,m)=>a+(m.linDev||0),0)||1;
+  const caSum=meubles.reduce((a,m)=>a+m.ca,0);
+  const caMlMoy=caSum/linTotal;
+
+  for(const m of meubles){
+    if(m.ca===0){m.ratio=null;m.perfColor='#AAAAAA';m.perfLabel='Pas de données';}
+    else{const r=caMlMoy>0?Math.round(m.caMl/caMlMoy*100)/100:0;const[pc,pl]=perfColor(r);m.ratio=r;m.perfColor=pc;m.perfLabel=pl;}
+  }
+
+  return {meurLines,entreeLines,meubles,caMlMoy};
+}
+
+// ═════════════════════════════════════════════════════════════════
+// GAP ANALYSIS + RECOMMANDATIONS
+// ═════════════════════════════════════════════════════════════════
+function gapAnalysis(meubles,caMlMoy){
+  const caGf={},linGf={};
+  for(const m of meubles){caGf[m.gf]=(caGf[m.gf]||0)+m.ca;linGf[m.gf]=(linGf[m.gf]||0)+m.linDev;}
+  const caTot=Object.values(caGf).reduce((a,b)=>a+b,0)||1;
+  const partOff={};
+  for(const gf in caGf) partOff[gf]=Math.round(caGf[gf]/caTot*1000)/10;
+
+  const recos=[];
+  for(const [gf,bn] of Object.entries(BENCHMARK_NATIONAL)){
+    if(gf==='NON_ATTRIBUE')continue;
+    const pOff=partOff[gf]||0;
+    const caMlOff=linGf[gf]>0?Math.round(caGf[gf]/linGf[gf]):0;
+    const gapPart=Math.round((bn.part-pOff)*10)/10;
+    const gapCaMl=bn.ca_ml-caMlOff;
+    const lbl=GF_LABELS[gf]||gf, col=GF_COLORS[gf]||'#888';
+
+    if(gapPart>4){
+      recos.push({
+        priorite:gapPart>8?1:2, impact:gapPart>8?'Élevé':'Moyen',
+        gf,label:lbl,color:col,
+        titre:pOff===0?`Introduire ${lbl}`:`Développer ${lbl}`,
+        detail:pOff===0
+          ?`Famille absente du linéaire. Part nationale fictive : ${bn.part}% du CA parapharmacie. Croissance fictive : ${bn.croissance>0?'+':''}${bn.croissance}%/an. Action : créer un emplacement dédié, commencer par les références leaders.`
+          :`Part officine : ${pOff}% vs nationale fictive : ${bn.part}% (sous-représentée de ${gapPart>0?'+':''}${gapPart} pt). Croissance fictive : ${bn.croissance>0?'+':''}${bn.croissance}%/an. Action : augmenter le linéaire et diversifier l'assortiment.`,
+        action:pOff===0?'Créer linéaire':'Agrandir linéaire',
+        gain:Math.round(gapPart/100*caTot*0.3),
+      });
+    }
+    if(caMlOff>0&&gapCaMl>60){
+      recos.push({
+        priorite:gapCaMl>120?1:2, impact:gapCaMl>120?'Élevé':'Moyen',
+        gf,label:lbl,color:col,
+        titre:`Optimiser le rendement ${lbl}`,
+        detail:`CA/m linéaire officine : ${caMlOff} €/m vs national fictif : ${bn.ca_ml} €/m (écart ${gapCaMl>0?'+':''}${gapCaMl} €/m). Action : revoir l'assortiment, repositionner les meilleurs produits en zone or/argent, retirer les références à faible rotation.`,
+        action:'Optimiser assortiment',
+        gain:Math.round((linGf[gf]||0)*gapCaMl*0.25),
+      });
+    }
+    if(gapPart<-8&&caMlOff>0&&caMlOff<bn.ca_ml*0.75){
+      recos.push({
+        priorite:2, impact:'Moyen', gf,label:lbl,color:col,
+        titre:`Rééquilibrer ${lbl}`,
+        detail:`Part officine : ${pOff}% vs nationale fictive : ${bn.part}% (surreprésentée de ${Math.abs(gapPart)} pt) et rendement ${caMlOff} €/m sous la moyenne nationale fictive (${bn.ca_ml} €/m). Action : réduire de 20-30% le linéaire et réallouer aux familles à fort potentiel.`,
+        action:'Réduire + réallouer',
+        gain:Math.round((linGf[gf]||0)*0.25*bn.ca_ml*0.2),
+      });
+    }
+  }
+  for(const m of meubles){
+    if(m.ratio!==null&&m.ratio<0.5&&m.linDev>5){
+      recos.push({
+        priorite:2, impact:'Moyen', gf:m.gf, label:GF_LABELS[m.gf]||m.gf, color:m.perfColor,
+        titre:`Zone froide — ${m.calcId}`,
+        detail:`Meuble ${m.calcId} (${m.linDev} m linéaire) : ratio ${m.ratio} vs moyenne officine. CA/m : ${m.caMl} € vs moy. ${Math.round(caMlMoy)} €. Action : repositionner le meuble, changer l'assortiment ou convertir en famille plus performante.`,
+        action:'Repositionner meuble',
+        gain:Math.round((caMlMoy-m.caMl)*m.linDev*0.4),
+      });
+    }
+  }
+  recos.sort((a,b)=>a.priorite-b.priorite||(b.gain-a.gain));
+  return {recos,partOff,caGf,linGf};
+}
+
+// ═════════════════════════════════════════════════════════════════
+// SVG PLAN
+// ═════════════════════════════════════════════════════════════════
+function buildSVG(meurLines,entreeLines,meubles){
+  const W=620,H=860,PAD=40;
+  const allLines=[...meurLines,...entreeLines,...meubles.flatMap(m=>m.lines)];
+  if(!allLines.length)return'<div style="color:#aaa;padding:40px;font-style:italic">Aucune géométrie trouvée dans le DXF</div>';
+
+  const xs=allLines.flatMap(l=>[l[0],l[2]]),ys=allLines.flatMap(l=>[l[1],l[3]]);
+  const xMin=Math.min(...xs),xMax=Math.max(...xs),yMin=Math.min(...ys),yMax=Math.max(...ys);
+  const dw=xMax-xMin||1,dh=yMax-yMin||1;
+
+  function sv(x,y){return[PAD+(x-xMin)/dw*(W-2*PAD), H-PAD-(y-yMin)/dh*(H-2*PAD)];}
+  function lsvg(lines,color,w,op=1){
+    return lines.map(([x1,y1,x2,y2])=>{const[a,b]=sv(x1,y1),[c,d]=sv(x2,y2);return`<line x1="${a.toFixed(1)}" y1="${b.toFixed(1)}" x2="${c.toFixed(1)}" y2="${d.toFixed(1)}" stroke="${color}" stroke-width="${w}" stroke-linecap="round" opacity="${op}"/>`;}).join('');
+  }
+  function bbox(lines){const xs=lines.flatMap(l=>[l[0],l[2]]),ys=lines.flatMap(l=>[l[1],l[3]]);return[Math.min(...xs),Math.max(...xs),Math.min(...ys),Math.max(...ys)];}
+
+  let s=`<defs><pattern id="hatch-e" patternUnits="userSpaceOnUse" width="6" height="6"><path d="M-1,1 l2,-2 M0,6 l6,-6 M5,7 l2,-2" stroke="#888" stroke-width="1" opacity=".4"/></pattern></defs>`;
+  s+=lsvg(meurLines,'#444',2.5);
+
+  if(entreeLines.length){
+    const[ex1,ex2,ey1,ey2]=bbox(entreeLines);
+    const[rx,ry_t]=sv(ex1,ey2),[rx2,ry_b]=sv(ex2,ey1);
+    const[cx,cy]=sv((ex1+ex2)/2,(ey1+ey2)/2);
+    const w=Math.max(rx2-rx,10),h=Math.max(ry_b-ry_t,10);
+    s+=`<rect x="${rx.toFixed(1)}" y="${ry_t.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="url(#hatch-e)" stroke="#555" stroke-width="1.5" stroke-dasharray="4,3" rx="2"/>`;
+    s+=`<text x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="#444" font-weight="bold">ENTRÉE</text>`;
+  }
+
+  for(const m of meubles){
+    const color=m.color;
+    let bx1,bx2,by1,by2;
+    if(m.lines.length>=2){[bx1,bx2,by1,by2]=bbox(m.lines);}
+    else{const sp=15;bx1=m.ix-sp;bx2=m.ix+sp;by1=m.iy-sp;by2=m.iy+sp;}
+    const[rx,ry_t]=sv(bx1,by2),[rx2,ry_b]=sv(bx2,by1);
+    const w=Math.max(rx2-rx,8),h=Math.max(ry_b-ry_t,8);
+    const[cx,cy]=sv((bx1+bx2)/2,(by1+by2)/2);
+    const cid=m.calcId;
+    s+=`<g class="meuble" data-id="${cid}" data-gf="${m.gf}" onclick="selectMeuble('${cid}')" style="cursor:pointer">`;
+    s+=`<rect class="meuble-rect" x="${rx.toFixed(1)}" y="${ry_t.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="${color}" fill-opacity="0.28" stroke="${color}" stroke-width="1.8" rx="2"/>`;
+    if(m.lines.length>=2)s+=lsvg(m.lines,color,1.4);
+    s+=`<text x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="${color}" font-weight="bold" pointer-events="none">${cid}</text>`;
+    s+='</g>';
+  }
+
+  return`<svg id="plan-svg" width="${W}" height="${H}" style="background:#fafaf8;border-radius:8px;box-shadow:0 2px 20px rgba(0,0,0,.18)">${s}</svg>`;
+}
+
+// ═════════════════════════════════════════════════════════════════
+// RENDU RAPPORT
+// ═════════════════════════════════════════════════════════════════
+let RAPPORT = null;
+
+function buildRapport(dxf,calc,ventesMap,usedFictif){
+  const {meurLines,entreeLines,meubles,caMlMoy} = fusionnerMeubles(dxf,calc,ventesMap,usedFictif);
+  const {recos,partOff,caGf,linGf} = gapAnalysis(meubles,caMlMoy);
+
+  // Métriques globales
+  const totalCa=meubles.reduce((a,m)=>a+m.ca,0);
+  const totalQte=meubles.reduce((a,m)=>a+m.qte,0);
+  const totalProd=meubles.reduce((a,m)=>a+m.nbProduits,0);
+  const totalAnn=meubles.reduce((a,m)=>a+m.caAnnuel,0);
+  const caMonthGlobal=SAISONNALITE.map((_,i)=>meubles.reduce((a,m)=>a+(m.caMensuel[i]||0),0));
+  const caAnnuelGf={};
+  for(const m of meubles) caAnnuelGf[m.gf]=(caAnnuelGf[m.gf]||0)+m.caAnnuel;
+  const linTotGf=Object.values(linGf).reduce((a,b)=>a+b,0)||1;
+  const partLin={};
+  for(const gf in linGf) partLin[gf]=Math.round(linGf[gf]/linTotGf*1000)/10;
+
+  RAPPORT={meubles,meurLines,entreeLines,recos,partOff,caGf,linGf,partLin,
+    totalCa,totalQte,totalProd,totalAnn,caMlMoy,caMonthGlobal,caAnnuelGf,usedFictif};
+
+  // Header rapport
+  document.getElementById('hdr-officine').innerHTML=
+    `${calc.officine||'Officine'} — ${calc.date||''}
+     <span class="${usedFictif?'badge-red':'badge-gray'}">${usedFictif?'⚠️ DONNÉES FICTIVES':'Données réelles'}</span>`;
+
+  document.getElementById('disclaimer-bar').innerHTML = usedFictif
+    ? '<strong>⚠️ PROTOTYPE FICTIF.</strong> Toutes les données de vente et le benchmark national sont inventés pour valider la logique de l\'outil. Ne pas utiliser dans le projet réel.'
+    : '<strong>Benchmark fictif.</strong> Les données de vente sont réelles. Le benchmark national reste fictif et doit être remplacé par des données GERS/IRI officielles avant usage terrain.';
+
+  // Onglet Plan
+  document.getElementById('plan-svg-area').innerHTML=buildSVG(meurLines,entreeLines,meubles);
+  buildSidebar(meubles,totalCa,totalQte,totalProd,meubles.filter(m=>m.matched).length,caMlMoy);
+
+  // Afficher rapport
+  document.getElementById('phase-upload').style.display='none';
+  document.getElementById('phase-rapport').style.display='block';
+
+  log('✅ Rapport généré — '+meubles.length+' meubles · '+recos.length+' recommandations','ok');
+}
+
+function buildSidebar(meubles,totalCa,totalQte,totalProd,nbMatch,caMlMoy){
+  const gfsPresents=[...new Set(meubles.map(m=>m.gf))];
+  const legFam=gfsPresents.map(gf=>{
+    const c=GF_COLORS[gf]||'#9E9E9E',l=GF_LABELS[gf]||gf;
+    return`<div class="leg-item" onclick="filterGF('${gf}')" id="leg-${gf}"><div class="leg-dot" style="background:${c}"></div>${l}</div>`;
+  }).join('');
+  const legPerf=PERF_COLORS.map(([,c,l])=>`<div class="leg-item"><div class="leg-dot" style="background:${c}"></div>${l}</div>`).join('')
+    +'<div class="leg-item"><div class="leg-dot" style="background:#AAAAAA"></div>Pas de données</div>';
+
+  document.getElementById('plan-sidebar').innerHTML=`
+    <div class="sb-section">
+      <div class="sb-title">Affichage</div>
+      <div class="toggle-wrap">
+        <button class="toggle-btn active" id="btn-fam" onclick="setMode('famille')">Famille</button>
+        <button class="toggle-btn" id="btn-perf" onclick="setMode('perf')">Performance</button>
+      </div>
+    </div>
+    <div class="sb-section" id="panel-famille">
+      <div class="sb-title">Grandes familles</div>
+      <div style="font-size:10px;color:#aaa;margin-bottom:6px">Cliquer pour filtrer</div>
+      ${legFam}
+      <div class="leg-item" onclick="filterGF(null)" style="margin-top:4px;color:#888;font-size:11px">↩ Tout afficher</div>
+    </div>
+    <div class="sb-section" id="panel-perf" style="display:none">
+      <div class="sb-title">Performance CA/m linéaire</div>
+      <div style="font-size:10px;color:#aaa;margin-bottom:6px">Vs moyenne officine (${Math.round(caMlMoy)} €/m)</div>
+      ${legPerf}
+    </div>
+    <div class="sb-section" style="flex:1">
+      <div class="sb-title">Détail meuble</div>
+      <div id="detail-content" style="color:#aaa;font-style:italic;font-size:12px">← Cliquer sur un meuble</div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-title">Vue d'ensemble</div>
+      <div class="stat-row"><span>${nbMatch}/${meubles.length} meubles matchés</span></div>
+      <div class="stat-row"><span>Produits saisis</span><span class="stat-val">${totalProd}</span></div>
+      <div class="stat-row"><span>CA/mois</span><span class="stat-val">${totalCa.toLocaleString('fr-FR')} €</span></div>
+      <div class="stat-row"><span>Ventes/mois</span><span class="stat-val">${totalQte.toLocaleString('fr-FR')} u.</span></div>
+    </div>`;
+}
+
+// ═════════════════════════════════════════════════════════════════
+// INTERACTIONS PLAN
+// ═════════════════════════════════════════════════════════════════
+let currentMode='famille', activeGF=null;
+
+function setMode(mode){
+  currentMode=mode;
+  document.getElementById('btn-fam').classList.toggle('active',mode==='famille');
+  document.getElementById('btn-perf').classList.toggle('active',mode==='perf');
+  document.getElementById('panel-famille').style.display=mode==='famille'?'':'none';
+  document.getElementById('panel-perf').style.display=mode==='perf'?'':'none';
+  activeGF=null;
+  document.querySelectorAll('.leg-item').forEach(el=>el.classList.remove('factive'));
+  document.querySelectorAll('.meuble').forEach(el=>{
+    const m=RAPPORT.meubles.find(x=>x.calcId===el.dataset.id);if(!m)return;
+    const color=mode==='perf'?m.perfColor:m.color;
+    el.querySelector('.meuble-rect')?.setAttribute('fill',color);
+    el.querySelector('.meuble-rect')?.setAttribute('stroke',color);
+    el.querySelectorAll('line').forEach(l=>l.setAttribute('stroke',color));
+    el.querySelectorAll('text').forEach(t=>t.setAttribute('fill',color));
+    el.style.opacity='1';
+  });
+}
+
+function filterGF(gf){
+  if(currentMode!=='famille')return;
+  activeGF=gf;
+  document.querySelectorAll('.leg-item').forEach(el=>el.classList.remove('factive'));
+  if(gf){const l=document.getElementById('leg-'+gf);if(l)l.classList.add('factive');}
+  document.querySelectorAll('.meuble').forEach(el=>{el.style.opacity=(!gf||el.dataset.gf===gf)?'1':'0.12';});
+}
+
+function selectMeuble(id){
+  document.querySelectorAll('.meuble').forEach(el=>el.classList.remove('selected'));
+  document.querySelector(`.meuble[data-id="${id}"]`)?.classList.add('selected');
+  const m=RAPPORT.meubles.find(x=>x.calcId===id);if(!m)return;
+  const faceTag=id.endsWith('_FA')?'<span style="background:#2E6B7A;color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:5px">Face A</span>':id.endsWith('_FB')?'<span style="background:#5D4037;color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:5px">Face B</span>':'';
+  const platRows=m.plateaux.map(p=>p.produits.length===0
+    ?`<tr><td style="color:#ccc;font-weight:700">${p.numero}</td><td style="color:#ccc;font-style:italic">Vide</td><td style="color:#ccc;text-align:right">—</td><td style="color:#aaa;text-align:right">—</td></tr>`
+    :`<tr><td style="font-weight:700;color:${m.perfColor}">${p.numero}</td><td><span style="color:var(--teal);font-weight:600;font-size:10px">${p.gamme}</span><br><span style="color:#888;font-size:10px">${p.produits.join(', ').substring(0,50)}${p.produits.join(', ').length>50?'…':''}</span></td><td style="font-weight:700;color:${m.perfColor};text-align:right">${p.ca.toLocaleString('fr-FR')} €</td><td style="color:#888;text-align:right">${p.qte}</td></tr>`
+  ).join('');
+  document.getElementById('detail-content').innerHTML=`
+    <div style="font-size:13px;font-weight:700;margin-bottom:6px">${m.calcId}${faceTag}</div>
+    <div style="font-size:11px;color:#888;margin-bottom:8px">DXF : ${m.dxfId} · Type : ${m.type||'—'}<br>
+      <span style="color:${m.color};font-weight:700">${m.gf}</span>${m.famille?' › '+m.famille:''}${m.gamme?' › '+m.gamme:''}</div>
+    <div style="font-size:11px;color:#888;margin-bottom:8px">${m.hauteur}h × ${m.largeur}l cm · ${m.nbPlateaux} plat. · ${m.nbProduits} produit(s)</div>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="metric-val" style="color:${m.perfColor}">${m.ca.toLocaleString('fr-FR')} €</div><div class="metric-lbl">CA/mois</div></div>
+      <div class="metric-card"><div class="metric-val" style="color:${m.perfColor}">${m.qte}</div><div class="metric-lbl">Unités/mois</div></div>
+      <div class="metric-card"><div class="metric-val" style="color:${m.perfColor}">${m.prixMoy.toLocaleString('fr-FR')} €</div><div class="metric-lbl">Prix moyen</div></div>
+      <div class="metric-card"><div class="metric-val" style="color:${m.perfColor}">${m.caMl.toLocaleString('fr-FR')} €</div><div class="metric-lbl">CA/m lin.</div></div>
+      <div class="metric-card"><div class="metric-val" style="color:${m.perfColor}">${m.caPl.toLocaleString('fr-FR')} €</div><div class="metric-lbl">CA/plateau</div></div>
+      <div class="metric-card"><div class="metric-val">${m.linDev} m</div><div class="metric-lbl">Lin. développé</div></div>
+    </div>
+    <div class="perf-bar" style="background:${m.perfColor}20;border-left:3px solid ${m.perfColor};color:${m.perfColor}">
+      ${m.perfLabel}${m.ratio!==null?' — ratio '+m.ratio+' vs moy.':''}
+    </div>
+    <div style="margin-top:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--teal)">Détail par plateau</div>
+    <table class="plat-table"><thead><tr><th>#</th><th>Gamme / Produit</th><th style="text-align:right">CA</th><th style="text-align:right">Qté</th></tr></thead>
+    <tbody>${platRows}</tbody></table>`;
+}
+
+// ═════════════════════════════════════════════════════════════════
+// ONGLET VENTES
+// ═════════════════════════════════════════════════════════════════
+let ventesBuilt=false;
+function buildVentes(){
+  if(ventesBuilt)return; ventesBuilt=true;
+  const R=RAPPORT;
+  const totalCa=R.totalCa, totalQte=R.totalQte, totalAnn=R.totalAnn;
+  const prixMoy=totalQte>0?Math.round(totalCa/totalQte*100)/100:0;
+
+  // KPIs
+  const kpiHtml=`
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-val">${(totalAnn/1000).toFixed(0)}k €</div><div class="kpi-lbl">CA annuel estimé</div></div>
+      <div class="kpi-card"><div class="kpi-val">${totalCa.toLocaleString('fr-FR')} €</div><div class="kpi-lbl">CA mensuel moyen</div></div>
+      <div class="kpi-card"><div class="kpi-val">${(totalQte*12).toLocaleString('fr-FR')}</div><div class="kpi-lbl">Unités/an estimées</div></div>
+      <div class="kpi-card"><div class="kpi-val">${prixMoy.toLocaleString('fr-FR')} €</div><div class="kpi-lbl">Prix moyen</div></div>
+      <div class="kpi-card"><div class="kpi-val">${Math.round(R.caMlMoy)} €</div><div class="kpi-lbl">CA/m linéaire moy.</div></div>
+    </div>`;
+
+  // Tableau meubles
+  const maxCaMl=Math.max(...R.meubles.filter(m=>m.ca>0).map(m=>m.caMl))||1;
+  const tbodyRows=R.meubles.filter(m=>m.ca>0).sort((a,b)=>b.ca-a.ca).map(m=>{
+    const pct=Math.round(m.caMl/maxCaMl*100);
+    return`<tr>
+      <td style="font-weight:700;color:${m.color}">${m.calcId}</td>
+      <td style="color:${m.color}">${GF_LABELS[m.gf]||m.gf}</td>
+      <td style="font-weight:700">${m.ca.toLocaleString('fr-FR')} €</td>
+      <td>${m.qte}</td>
+      <td>${m.prixMoy.toLocaleString('fr-FR')} €</td>
+      <td>${m.caMl.toLocaleString('fr-FR')} €/m</td>
+      <td>${m.linDev} m</td>
+      <td style="color:${m.perfColor};font-weight:700">${m.perfLabel}</td>
+      <td><div class="bar-cell"><div class="bar-fill" style="width:${pct}%;background:${m.perfColor}"></div></div></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('ventes-content').innerHTML=`
+    ${kpiHtml}
+    <div class="ventes-row">
+      <div class="chart-card" style="flex:2">
+        <div class="chart-title">CA mensuel estimé — toutes familles</div>
+        <div class="chart-sub">${R.usedFictif?'⚠️ Données fictives — saisonnalité simulée':'Saisonnalité estimée depuis le mois de référence'}</div>
+        <canvas id="chart-mensuel" height="180"></canvas>
+      </div>
+      <div class="chart-card" style="flex:1">
+        <div class="chart-title">CA annuel par grande famille</div>
+        <div class="chart-sub">${R.usedFictif?'⚠️ Fictif':''}</div>
+        <canvas id="chart-gf" height="180"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Détail par meuble</div>
+      <div class="chart-sub">${R.usedFictif?'⚠️ CA, quantités et prix moyens fictifs':''}</div>
+      <table class="ventes-table">
+        <thead><tr><th>Meuble</th><th>Grande famille</th><th>CA/mois</th><th>Qté/mois</th><th>Prix moy.</th><th>CA/m lin.</th><th>Lin. dev.</th><th>Performance</th><th style="width:100px">Rendement</th></tr></thead>
+        <tbody>${tbodyRows}</tbody>
+      </table>
+    </div>`;
+
+  // Dessiner graphes (après que le DOM soit mis à jour)
+  setTimeout(()=>{
+    const c1=document.getElementById('chart-mensuel');
+    if(c1)drawLineChart(c1.getContext('2d'),MOIS_LABELS,R.caMonthGlobal,'#2E6B7A');
+    const gfs=Object.keys(R.caAnnuelGf);
+    const c2=document.getElementById('chart-gf');
+    if(c2)drawBarChart(c2.getContext('2d'),gfs.map(g=>GF_LABELS[g]||g),gfs.map(g=>R.caAnnuelGf[g]),gfs.map(g=>GF_COLORS[g]||'#888'));
+  },50);
+}
+
+// ═════════════════════════════════════════════════════════════════
+// ONGLET RECOMMANDATIONS
+// ═════════════════════════════════════════════════════════════════
+let recosBuilt=false;
+function buildRecos(){
+  if(recosBuilt)return; recosBuilt=true;
+  const R=RAPPORT;
+  const linTotal=Object.values(R.linGf).reduce((a,b)=>a+b,0)||1;
+
+  // Gap table
+  const gapRows=Object.keys(BENCHMARK_NATIONAL).filter(g=>g!=='NON_ATTRIBUE').map(gf=>{
+    const bn=BENCHMARK_NATIONAL[gf];
+    const pOff=R.partOff[gf]||0;
+    const caMlOff=R.linGf[gf]>0?Math.round(R.caGf[gf]/R.linGf[gf]):0;
+    const gapPart=Math.round((bn.part-pOff)*10)/10;
+    const gapCaMl=bn.ca_ml-caMlOff;
+    return`<tr>
+      <td><span style="color:${GF_COLORS[gf]||'#888'};font-weight:700">${GF_LABELS[gf]||gf}</span></td>
+      <td>${pOff}%</td><td>${bn.part}%</td>
+      <td class="${gapPart>0?'gap-neg':'gap-pos'}">${gapPart>0?'+':''}${gapPart} pt</td>
+      <td>${caMlOff.toLocaleString('fr-FR')} €/m</td>
+      <td>${bn.ca_ml.toLocaleString('fr-FR')} €/m</td>
+      <td class="${gapCaMl>0?'gap-neg':'gap-pos'}">${gapCaMl>0?'+':''}${gapCaMl} €/m</td>
+      <td class="${bn.croissance>=0?'gap-pos':'gap-neg'}">${bn.croissance>0?'+':''}${bn.croissance}%/an</td>
+    </tr>`;
+  }).join('');
+
+  const recoCards=R.recos.map((r,i)=>`
+    <div class="reco-card" style="border-left-color:${r.color}">
+      <div class="reco-top">
+        <div style="background:${r.color};color:#fff;font-size:11px;font-weight:700;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
+        <div class="reco-titre">${r.titre}</div>
+        <span class="reco-badge ${r.impact==='Élevé'?'badge-eleve':'badge-moyen'}">Impact ${r.impact}</span>
+        <span class="reco-action">${r.action}</span>
+      </div>
+      <div class="reco-detail">${r.detail}</div>
+      <div class="reco-gain">💰 Gain potentiel estimé : <strong>${r.gain.toLocaleString('fr-FR')} €/an</strong>${R.usedFictif?' — basé sur données fictives, ne pas utiliser':''}</div>
+    </div>`).join('');
+
+  document.getElementById('recos-content').innerHTML=`
+    <div>
+      <div style="font-weight:700;font-size:15px;color:var(--teal);margin-bottom:4px">${R.recos.length} recommandations identifiées</div>
+      <div style="font-size:12px;color:#888;margin-bottom:8px">${R.usedFictif?'⚠️ Générées depuis un benchmark fictif — logique correcte mais valeurs à remplacer par des données GERS/IRI officielles.':'Benchmark fictif — à remplacer avant usage terrain.'}</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Gap analysis — Officine vs Benchmark national fictif</div>
+      <div class="chart-sub">⚠️ Benchmark entièrement fictif — ne pas utiliser comme référence officielle</div>
+      <table class="gap-table">
+        <thead><tr><th>Grande famille</th><th>Part officine</th><th>Part nat. fictive</th><th>Écart part</th><th>CA/m officine</th><th>CA/m nat. fictif</th><th>Écart rendement</th><th>Croissance fictive</th></tr></thead>
+        <tbody>${gapRows}</tbody>
+      </table>
+    </div>
+    <div id="recos-list">${recoCards||'<div style="color:#aaa;font-style:italic;padding:20px">Aucune recommandation générée — les meubles sont bien optimisés vs le benchmark fictif.</div>'}</div>`;
+}
+
+// ═════════════════════════════════════════════════════════════════
+// CANVAS CHARTS
+// ═════════════════════════════════════════════════════════════════
+function drawLineChart(ctx,labels,data,color){
+  const W=ctx.canvas.width=ctx.canvas.offsetWidth||600,H=ctx.canvas.height;
+  const p={t:10,r:20,b:28,l:52};
+  const maxV=Math.max(...data)*1.1||1;
+  const xS=(W-p.l-p.r)/(labels.length-1),yS=(H-p.t-p.b)/maxV;
+  ctx.clearRect(0,0,W,H);
+  for(let i=0;i<=4;i++){
+    const y=H-p.b-(i/4)*(H-p.t-p.b);
+    ctx.strokeStyle='#eee';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(W-p.r,y);ctx.stroke();
+    ctx.fillStyle='#aaa';ctx.font='10px system-ui';ctx.textAlign='right';
+    ctx.fillText(Math.round(maxV*i/4).toLocaleString('fr-FR'),p.l-4,y+3);
+  }
+  ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.beginPath();
+  data.forEach((v,i)=>{const x=p.l+i*xS,y=H-p.b-v*yS;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+  ctx.fillStyle=color+'22';
+  ctx.lineTo(p.l+(data.length-1)*xS,H-p.b);ctx.lineTo(p.l,H-p.b);ctx.closePath();ctx.fill();
+  data.forEach((v,i)=>{
+    const x=p.l+i*xS,y=H-p.b-v*yS;
+    ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#888';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText(labels[i],x,H-p.b+14);
+  });
+}
+
+function drawBarChart(ctx,labels,data,colors){
+  const W=ctx.canvas.width=ctx.canvas.offsetWidth||400,H=ctx.canvas.height;
+  const p={t:10,r:10,b:60,l:52};
+  const maxV=Math.max(...data)*1.1||1,n=labels.length;
+  const bw=(W-p.l-p.r)/n*0.65,gap=(W-p.l-p.r)/n*0.35;
+  const yS=(H-p.t-p.b)/maxV;
+  ctx.clearRect(0,0,W,H);
+  for(let i=0;i<=4;i++){
+    const y=H-p.b-(i/4)*(H-p.t-p.b);
+    ctx.strokeStyle='#eee';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(W-p.r,y);ctx.stroke();
+    ctx.fillStyle='#aaa';ctx.font='10px system-ui';ctx.textAlign='right';
+    ctx.fillText(Math.round(maxV*i/4/1000)+'k',p.l-4,y+3);
+  }
+  data.forEach((v,i)=>{
+    const x=p.l+i*(bw+gap)+gap/2,bh=v*yS,y=H-p.b-bh;
+    ctx.fillStyle=colors[i];ctx.beginPath();ctx.roundRect(x,y,bw,bh,3);ctx.fill();
+    ctx.fillStyle='#666';ctx.font='9px system-ui';ctx.textAlign='center';
+    const l=labels[i].length>8?labels[i].substring(0,8)+'…':labels[i];
+    ctx.save();ctx.translate(x+bw/2,H-p.b+8);ctx.rotate(-Math.PI/4);ctx.fillText(l,0,0);ctx.restore();
+  });
+}
+
+// ═════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═════════════════════════════════════════════════════════════════
+function showTab(name,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='ventes')buildVentes();
+  if(name==='recos')buildRecos();
+}
+
+function retourUpload(){
+  document.getElementById('phase-rapport').style.display='none';
+  document.getElementById('phase-upload').style.display='block';
+  ventesBuilt=false; recosBuilt=false; currentMode='famille'; activeGF=null;
+  // Remettre l'onglet Plan actif
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-plan').classList.add('active');
+  document.querySelector('.tab-btn')?.classList.add('active');
+}
+
+// ═════════════════════════════════════════════════════════════════
+// GÉNÉRATION
+// ═════════════════════════════════════════════════════════════════
+function generer(){
+  clearLog();
+  log('═══════════════════════════════════','info');
+  log('  Merchi — Génération rapport','info');
+  log('  Aucun serveur — JS pur navigateur','info');
+  log('═══════════════════════════════════','info');
+
+  // 1. DXF
+  log('── Parsing DXF…','info');
+  const dxf=parseDXF(FILES.dxf.content);
+  log(`  Blocs : ${Object.keys(dxf.blocks).length} | INSERTs : ${dxf.inserts.length}`,'ok');
+
+  // 2. JSON
+  let calc;
+  try{calc=JSON.parse(FILES.json.content);log(`── JSON : ${calc.meubles?.length||0} meubles — "${calc.officine}"`,'ok');}
+  catch(e){log('❌ JSON invalide : '+e.message,'err');return;}
+
+  // 3. CSV ventes (optionnel)
+  let ventesMap={}, usedFictif=false;
+  if(FILES.csv){
+    ventesMap=parseCSV(FILES.csv.content);
+    log(`── CSV ventes : ${Object.keys(ventesMap).length} lignes lues`,'ok');
+  } else {
+    ventesMap=Object.fromEntries(Object.entries(FICTIF_CA).map(([k,v])=>[k,v]));
+    usedFictif=true;
+    log('── Pas de CSV — données fictives utilisées ⚠️','warn');
+  }
+
+  // 4. Vérification meubles
+  const meublesDXF=dxf.inserts.filter(ins=>MEUBLE_RE.test(ins.layer||''));
+  if(meublesDXF.length===0){
+    log('❌ Aucun meuble trouvé dans le DXF. Vérifier les noms de couches (M1, G1_FA, TG1…)','err');
+    return;
+  }
+  log(`── ${meublesDXF.length} meubles DXF détectés`,'ok');
+
+  // 5. Générer rapport
+  buildRapport(dxf,calc,ventesMap,usedFictif);
+}
+
+function modeDemo(){
+  if(!FILES.dxf){log('❌ Charger d\'abord le fichier DXF','err');return;}
+  if(!FILES.json){log('❌ Charger d\'abord le fichier JSON calculateur','err');return;}
+  generer(); // Même logique — si pas de CSV, utilise FICTIF_CA
+}
+</script>
+</body>
+</html>
