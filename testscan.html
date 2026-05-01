@@ -19,25 +19,33 @@ body{font-family:system-ui,Arial,sans-serif;background:#1a1a1a;color:#fff;font-s
 .count-badge:active{filter:brightness(.8)}
 
 /* ─── ZONE VISUEL MEUBLE ─── */
-.visual-area{flex:1;background:#2a2a2a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 14px;overflow:auto;position:relative}
-.visual-meuble{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px}
+.visual-area{flex:1;background:#2a2a2a;display:flex;flex-direction:column;align-items:center;padding:18px 14px;overflow-y:auto;overflow-x:hidden;position:relative;min-height:0}
+.visual-area::-webkit-scrollbar{width:6px}
+.visual-area::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:3px}
+.visual-meuble{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:340px;margin:auto 0}
 .meuble-title{font-size:13px;font-weight:700;color:var(--gold);letter-spacing:1px}
 .meuble-dims{font-size:11px;color:rgba(255,255,255,.5);margin-top:-10px;font-family:monospace}
 .meuble-empty{color:rgba(255,255,255,.4);text-align:center;padding:60px 20px;font-size:14px;line-height:1.7}
 .meuble-empty-arrow{font-size:32px;margin-bottom:10px}
 
 /* Représentation visuelle */
-.shelf-stack{display:flex;flex-direction:column;border:3px solid #555;border-radius:8px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.5);background:#3a3a3a}
-.shelf-row{padding:14px 12px;border-bottom:2px solid #555;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;transition:.15s;min-height:50px}
+.shelf-stack{display:flex;flex-direction:column;border:3px solid #555;border-radius:8px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.5);background:#3a3a3a;width:100%}
+.shelf-row{padding:9px 11px;border-bottom:2px solid #555;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;transition:.15s;min-height:42px}
 .shelf-row:last-child{border-bottom:none}
 .shelf-row:active{filter:brightness(1.2)}
 .shelf-row.active{background:var(--gold);color:#1a1a1a}
 .shelf-row.active .shelf-num{background:#1a1a1a;color:var(--gold)}
-.shelf-num{background:rgba(255,255,255,.15);color:#fff;font-weight:700;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
-.shelf-info{flex:1;text-align:left}
-.shelf-label{font-size:13px;font-weight:600}
-.shelf-count{font-size:10px;opacity:.6;font-family:monospace;margin-top:2px}
-.shelf-zone{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.15)}
+.shelf-num{background:rgba(255,255,255,.15);color:#fff;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.shelf-info{flex:1;text-align:left;min-width:0}
+.shelf-label{font-size:12px;font-weight:600}
+.shelf-count{font-size:9.5px;opacity:.6;font-family:monospace;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shelf-zone{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.15);flex-shrink:0}
+
+/* Plus de plateaux = lignes encore plus compactes */
+.shelf-stack.compact .shelf-row{padding:6px 10px;min-height:34px}
+.shelf-stack.compact .shelf-num{width:22px;height:22px;font-size:11px}
+.shelf-stack.compact .shelf-label{font-size:11.5px}
+.shelf-stack.compact .shelf-count{font-size:9px}
 
 /* Gondole 2 faces */
 .gondole-wrap{display:flex;gap:14px;align-items:flex-start}
@@ -402,6 +410,8 @@ function confirmType(){
   }
   $('btn-type-val').textContent = M.type + M.num;
   $('btn-dims').disabled = false;
+  // Auto-sélectionne plateau 1 → permet de scanner immédiatement
+  M.plateauActif = '1';
   refreshLabel();
   refreshVisual();
 
@@ -431,8 +441,11 @@ function confirmDims(){
   M.l = parseInt($('inp-l').value) || 0;
   M.np = parseInt($('inp-np').value) || 0;
   $('btn-dims-val').textContent = `${M.h}×${M.l}`;
+  // Auto-sélectionne plateau 1 si pas encore actif
+  if(!M.plateauActif) M.plateauActif = '1';
   closeModal('modal-dims');
   refreshVisual();
+  refreshScanBtn();
 }
 
 // ════════════════════════════════════════
@@ -524,7 +537,8 @@ function renderShelves(host){
       <div class="shelf-zone" style="background:${zone.color}33;color:${zone.color}">${zone.label}</div>
     </div>`);
   }
-  host.innerHTML = `<div class="shelf-stack">${rows.join('')}</div>`;
+  const compact = M.np >= 6 ? ' compact' : '';
+  host.innerHTML = `<div class="shelf-stack${compact}">${rows.join('')}</div>`;
 }
 
 function zoneRetail(n, total){
