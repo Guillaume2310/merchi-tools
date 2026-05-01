@@ -145,9 +145,9 @@ input:focus{outline:none;border-color:var(--teal)}
 .cam-video-wrap{flex:1;position:relative;overflow:hidden;background:#000}
 .cam-video-wrap video{width:100%!important;height:100%!important;object-fit:cover!important}
 #cam-video-wrap{width:100%;height:100%}
-.cam-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:35%;border:3px solid var(--gold);border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.45);pointer-events:none}
-.cam-line{position:absolute;left:50%;transform:translateX(-50%);width:75%;height:2.5px;background:var(--gold);box-shadow:0 0 8px var(--gold);animation:scan 2s linear infinite;pointer-events:none}
-@keyframes scan{0%{top:35%}50%{top:60%}100%{top:35%}}
+.cam-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:95%;max-width:480px;height:45%;max-height:200px;border:3px solid var(--gold);border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.4);pointer-events:none}
+.cam-line{position:absolute;left:50%;transform:translateX(-50%);width:88%;max-width:440px;height:2.5px;background:var(--gold);box-shadow:0 0 12px var(--gold);animation:scan 1.6s linear infinite;pointer-events:none}
+@keyframes scan{0%{top:30%}50%{top:65%}100%{top:30%}}
 .cam-status{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:#fff;font-size:13px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.9)}
 /* Outils caméra (torche + zoom) en overlay */
 .cam-tools{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;gap:8px;z-index:10}
@@ -716,22 +716,23 @@ async function startCamera(){
     ];
 
     const config = {
-      fps: 20,                     // 2× plus rapide (10 → 20 frames/s analysées)
-      // Zone de scan ciblée : rectangle large au centre (codes-barres = horizontaux)
+      fps: 30,                     // Max possible — scan le plus réactif possible
+      // Zone de scan plus large + plus haute → couvre quasiment tout l'écran
       qrbox: (vw, vh) => {
-        const w = Math.min(vw * 0.85, 360);
-        const h = Math.min(vh * 0.30, 140);
+        const w = Math.min(vw * 0.95, 480);
+        const h = Math.min(vh * 0.45, 200);
         return {width: Math.round(w), height: Math.round(h)};
       },
       aspectRatio: undefined,
       formatsToSupport: formats,
       // Active BarcodeDetector natif si dispo (Chrome Android, iOS 17+) → 5-10× plus rapide
       experimentalFeatures: {useBarCodeDetectorIfSupported: true},
-      // 720p suffit largement pour un EAN-13, et c'est plus rapide à traiter
+      // 1080p donne plus de détail sur les codes courbes (cylindres, flacons)
       videoConstraints: {
         facingMode: {ideal: 'environment'},
-        width: {ideal: 1280}, height: {ideal: 720},
+        width: {ideal: 1920}, height: {ideal: 1080},
         focusMode: 'continuous',
+        advanced: [{focusDistance: 0.2}], // pré-focus à ~20cm (distance scan habituelle)
       },
     };
 
@@ -803,7 +804,14 @@ function setupZoom(){
     zoomMin = cap.zoom.min || 1;
     zoomMax = cap.zoom.max || 1;
     zoomStep = cap.zoom.step || 0.5;
-    currentZoom = track.getSettings().zoom || zoomMin;
+    // Auto-zoom à 2x si possible → codes-barres petits beaucoup plus lisibles
+    const autoZoom = Math.min(2, zoomMax);
+    if(autoZoom > zoomMin){
+      currentZoom = autoZoom;
+      track.applyConstraints({advanced: [{zoom: currentZoom}]}).catch(()=>{});
+    } else {
+      currentZoom = track.getSettings().zoom || zoomMin;
+    }
     if(zoomMax > zoomMin) $('cam-zoom').style.display = 'flex';
     updateZoomLabel();
   }
