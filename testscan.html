@@ -2,28 +2,51 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Merchi — Scan</title>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{--teal:#2E6B7A;--gold:#E8A838;--bg:#f5f4f0;--green:#2e7d32;--red:#D32F2F;--border:#d8d4cc}
-html,body{height:100%}
-body{font-family:system-ui,Arial,sans-serif;background:#1a1a1a;color:#fff;font-size:15px;height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column}
+:root{
+  --teal:#2E6B7A;--gold:#E8A838;--bg:#f5f4f0;--green:#2e7d32;--red:#D32F2F;--border:#d8d4cc;
+  --top-h:48px;
+  --bot-h:108px;
+  --safe-top:env(safe-area-inset-top, 0px);
+  --safe-bot:env(safe-area-inset-bottom, 0px);
+}
+html{height:100%}
+body{font-family:system-ui,Arial,sans-serif;background:#1a1a1a;color:#fff;font-size:15px;min-height:100vh;min-height:100dvh}
 
-/* ─── BARRE HAUT ─── */
-.top-bar{background:var(--teal);padding:10px 14px;display:flex;align-items:center;gap:10px;height:48px;flex-shrink:0}
+/* ─── APP SHELL : top fixé, bottom fixé, scroll au milieu ─── */
+.top-bar{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  background:var(--teal);
+  padding:calc(10px + var(--safe-top)) 14px 10px;
+  display:flex;align-items:center;gap:10px;
+  height:calc(var(--top-h) + var(--safe-top));
+}
 .logo{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--gold);flex-shrink:0}
 .label{font-size:14px;font-weight:700;color:#fff;flex:1;text-align:center}
 .label-sub{font-size:10px;color:rgba(255,255,255,.65);font-weight:400}
 .count-badge{background:rgba(0,0,0,.25);padding:5px 10px;border-radius:14px;font-size:13px;font-weight:700;flex-shrink:0;display:flex;align-items:center;gap:5px;cursor:pointer}
 .count-badge:active{filter:brightness(.8)}
 
-/* ─── ZONE VISUEL MEUBLE ─── */
-.visual-area{flex:1;background:#2a2a2a;display:flex;flex-direction:column;align-items:center;padding:18px 14px;overflow-y:auto;overflow-x:hidden;position:relative;min-height:0}
+/* ─── ZONE VISUEL MEUBLE (entre les 2 barres) ─── */
+.visual-area{
+  position:fixed;
+  top:calc(var(--top-h) + var(--safe-top));
+  bottom:calc(var(--bot-h) + var(--safe-bot));
+  left:0;right:0;
+  background:#2a2a2a;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  display:flex;flex-direction:column;align-items:center;
+  padding:18px 14px;
+}
 .visual-area::-webkit-scrollbar{width:6px}
 .visual-area::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:3px}
-.visual-meuble{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:340px}
+.visual-meuble{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:340px}
 .meuble-title{font-size:13px;font-weight:700;color:var(--gold);letter-spacing:1px}
 .meuble-dims{font-size:11px;color:rgba(255,255,255,.5);margin-top:-10px;font-family:monospace}
 .meuble-empty{color:rgba(255,255,255,.4);text-align:center;padding:60px 20px;font-size:14px;line-height:1.7}
@@ -58,7 +81,13 @@ body{font-family:system-ui,Arial,sans-serif;background:#1a1a1a;color:#fff;font-s
 .shelf-simple.active{border-color:var(--gold);background:rgba(232,168,56,.15)}
 
 /* ─── BARRE BAS ─── */
-.bot-bar{background:#1a1a1a;border-top:1px solid #444;padding:14px 12px 22px;display:flex;align-items:center;gap:8px;height:120px;flex-shrink:0}
+.bot-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:50;
+  background:#1a1a1a;border-top:1px solid #444;
+  padding:12px 12px calc(12px + var(--safe-bot));
+  display:flex;align-items:center;gap:8px;
+  height:calc(var(--bot-h) + var(--safe-bot));
+}
 .bot-btn{flex:1;background:#2e2e2e;border:none;color:#fff;border-radius:14px;padding:12px 10px;font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:.15s}
 .bot-btn:active{filter:brightness(1.3)}
 .bot-btn-icon{font-size:24px;line-height:1}
