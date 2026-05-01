@@ -8,7 +8,8 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--teal:#2E6B7A;--gold:#E8A838;--bg:#f5f4f0;--green:#2e7d32;--red:#D32F2F;--border:#d8d4cc}
-body{font-family:system-ui,Arial,sans-serif;background:#1a1a1a;color:#fff;font-size:15px;height:100vh;overflow:hidden}
+html,body{height:100%}
+body{font-family:system-ui,Arial,sans-serif;background:#1a1a1a;color:#fff;font-size:15px;height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column}
 
 /* ─── BARRE HAUT ─── */
 .top-bar{background:var(--teal);padding:10px 14px;display:flex;align-items:center;gap:10px;height:48px;flex-shrink:0}
@@ -22,7 +23,7 @@ body{font-family:system-ui,Arial,sans-serif;background:#1a1a1a;color:#fff;font-s
 .visual-area{flex:1;background:#2a2a2a;display:flex;flex-direction:column;align-items:center;padding:18px 14px;overflow-y:auto;overflow-x:hidden;position:relative;min-height:0}
 .visual-area::-webkit-scrollbar{width:6px}
 .visual-area::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:3px}
-.visual-meuble{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:340px;margin:auto 0}
+.visual-meuble{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:340px}
 .meuble-title{font-size:13px;font-weight:700;color:var(--gold);letter-spacing:1px}
 .meuble-dims{font-size:11px;color:rgba(255,255,255,.5);margin-top:-10px;font-family:monospace}
 .meuble-empty{color:rgba(255,255,255,.4);text-align:center;padding:60px 20px;font-size:14px;line-height:1.7}
