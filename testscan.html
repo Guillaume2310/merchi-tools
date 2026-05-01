@@ -308,58 +308,487 @@ input:focus{outline:none;border-color:var(--teal)}
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script>'use strict';const TYPES=[{code:'M',label:'Mural',icon:'▮',plateaux:true,faces:false},{code:'G',label:'Gondole',icon:'⬚',plateaux:true,faces:true},{code:'TG',label:'Tête gond.',icon:'◰',plateaux:true,faces:false},{code:'CO',label:'Comptoir',icon:'▭',plateaux:true,faces:false},{code:'BV',label:'Bac vrac',icon:'▣',plateaux:false,faces:false},{code:'TA',label:'Table',icon:'▢',plateaux:false,faces:false},{code:'ML',label:'Lat.',icon:'▮',plateaux:true,faces:false},{code:'MO',label:'Module',icon:'▩',plateaux:true,faces:false},{code:'GC',label:'Gd. caisse',icon:'▦',plateaux:true,faces:false},];const DEFAULT_DIMS={M:{h:240,l:133,np:5},G:{h:180,l:100,np:5},TG:{h:180,l:65,np:5},CO:{h:90,l:120,np:1},BV:{h:80,l:60,np:0},TA:{h:75,l:120,np:1},ML:{h:200,l:90,np:4},MO:{h:200,l:100,np:4},GC:{h:200,l:200,np:6},};let M={type:null,num:'01',h:0,l:0,np:0,face:'A',plateauActif:null,};let scanned=[];let zxingReader=null;let lastEan=null,lastEanTime=0;function $(id){return document.getElementById(id);}
+<script>
+'use strict';
+
+// ════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════
+const TYPES = [
+  {code:'M',  label:'Mural',     icon:'▮', plateaux:true,  faces:false},
+  {code:'G',  label:'Gondole',   icon:'⬚', plateaux:true,  faces:true},
+  {code:'TG', label:'Tête gond.',icon:'◰', plateaux:true,  faces:false},
+  {code:'CO', label:'Comptoir',  icon:'▭', plateaux:true,  faces:false},
+  {code:'BV', label:'Bac vrac',  icon:'▣', plateaux:false, faces:false},
+  {code:'TA', label:'Table',     icon:'▢', plateaux:false, faces:false},
+  {code:'ML', label:'Lat.',      icon:'▮', plateaux:true,  faces:false},
+  {code:'MO', label:'Module',    icon:'▩', plateaux:true,  faces:false},
+  {code:'GC', label:'Gd. caisse',icon:'▦', plateaux:true,  faces:false},
+];
+
+const DEFAULT_DIMS = {
+  M:  {h:240, l:133, np:5},
+  G:  {h:180, l:100, np:5},
+  TG: {h:180, l:65,  np:5},
+  CO: {h:90,  l:120, np:1},
+  BV: {h:80,  l:60,  np:0},
+  TA: {h:75,  l:120, np:1},
+  ML: {h:200, l:90,  np:4},
+  MO: {h:200, l:100, np:4},
+  GC: {h:200, l:200, np:6},
+};
+
+// ════════════════════════════════════════
+// ÉTAT
+// ════════════════════════════════════════
+let M = {            // meuble courant
+  type: null, num: '01',
+  h: 0, l: 0, np: 0,
+  face: 'A',          // pour gondole
+  plateauActif: null,
+};
+let scanned = [];     // [{ean, nom, marque, source, key}] où key = "M01" ou "G01_FA"
+let zxingReader = null;
+let lastEan = null, lastEanTime = 0;
+
+function $(id){return document.getElementById(id);}
 function hide(id){$(id).style.display='none';}
 function vibrate(p){if(navigator.vibrate)navigator.vibrate(p);}
-function toast(msg,type=''){const t=$('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.classList.remove('show'),1700);}
+
+function toast(msg, type=''){
+  const t = $('toast');
+  t.textContent = msg; t.className = 'toast ' + type + ' show';
+  setTimeout(()=>t.classList.remove('show'), 1700);
+}
+
+// ════════════════════════════════════════
+// MODAL HELPERS
+// ════════════════════════════════════════
 function openModal(id){$(id).classList.add('show');}
 function closeModal(id){$(id).classList.remove('show');}
-function openType(){const grid=$('type-grid');grid.innerHTML=TYPES.map(t=>`<div class="type-card${M.type===t.code?' active':''}"data-code="${t.code}"onclick="selectType('${t.code}')"><div class="type-card-code">${t.code}</div><div class="type-card-lbl">${t.label}</div></div>`).join('');$('inp-id').value=M.num||'01';openModal('modal-type');}
-function selectType(code){document.querySelectorAll('.type-card').forEach(el=>el.classList.toggle('active',el.dataset.code===code));M.type=code;}
-function confirmType(){if(!M.type){toast('Choisis un type','red');return;}
-let num=$('inp-id').value.trim();if(!num){toast('Numéro requis','red');return;}
-if(num.length===1)num='0'+num;M.num=num;closeModal('modal-type');if(!M.h||!M.l){const d=DEFAULT_DIMS[M.type]||{h:200,l:100,np:5};M.h=d.h;M.l=d.l;M.np=d.np;}
-$('btn-type-val').textContent=M.type+M.num;$('btn-dims').disabled=false;refreshLabel();refreshVisual();if(!M.np&&TYPES.find(t=>t.code===M.type)?.plateaux){setTimeout(openDims,250);}}
-function openDims(){if(!M.type){toast('Choisis un type d\'abord','red');return;}
-const d=DEFAULT_DIMS[M.type]||{h:200,l:100,np:5};$('inp-h').value=M.h||d.h;$('inp-l').value=M.l||d.l;$('inp-np').value=M.np||d.np;const t=TYPES.find(t=>t.code===M.type);$('modal-dims-sub').textContent=t.plateaux?'Hauteur, largeur et nombre de plateaux':'Hauteur et largeur (pas de plateaux)';openModal('modal-dims');}
-function confirmDims(){M.h=parseInt($('inp-h').value)||0;M.l=parseInt($('inp-l').value)||0;M.np=parseInt($('inp-np').value)||0;$('btn-dims-val').textContent=`${M.h}×${M.l}`;closeModal('modal-dims');refreshVisual();}
-function refreshLabel(){if(!M.type){$('meuble-label').textContent='— Aucun meuble —';$('plateau-label').textContent='Tape un plateau';return;}
-const t=TYPES.find(x=>x.code===M.type);let label=`${M.type}${M.num}`;if(t.faces)label+=`Face ${M.face}`;$('meuble-label').textContent=label;$('plateau-label').textContent=M.plateauActif?`Plateau ${M.plateauActif}sélectionné`:'Tape un plateau pour scanner';}
-function refreshVisual(){const area=$('visual-area');if(!M.type){return;}
-const t=TYPES.find(x=>x.code===M.type);if(!t.plateaux){const k=`${M.type}${M.num}`;const cnt=scanned.filter(p=>p.key===k).length;area.innerHTML=`<div class="visual-meuble"><div class="meuble-title">${M.type}${M.num}— ${t.label.toUpperCase()}</div><div class="shelf-simple ${M.plateauActif==='1'?'active':''}"onclick="selectPlateau('1')"><div style="font-size:24px;margin-bottom:6px">${t.icon}</div><div style="font-weight:700;font-size:14px">${t.label}</div><div style="font-size:11px;color:#aaa;margin-top:6px">${cnt}produit${cnt>1?'s':''}</div></div><div class="meuble-dims">${M.h}h × ${M.l}l cm</div></div>`;M.plateauActif='1';refreshLabel();refreshScanBtn();return;}
-if(t.faces){area.innerHTML=`<div class="visual-meuble"><div class="meuble-title">${M.type}${M.num}</div><div class="face-toggle"style="background:#3a3a3a;width:100%"><button class="face-btn ${M.face==='A'?'active':''}"onclick="setFace('A')">Face A</button><button class="face-btn ${M.face==='B'?'active':''}"onclick="setFace('B')">Face B</button></div><div id="shelves-host"></div><div class="meuble-dims">${M.h}h × ${M.l}l × ${M.np}plateaux</div></div>`;renderShelves($('shelves-host'));refreshLabel();refreshScanBtn();return;}
-area.innerHTML=`<div class="visual-meuble"><div class="meuble-title">${M.type}${M.num}</div><div id="shelves-host"></div><div class="meuble-dims">${M.h}h × ${M.l}l × ${M.np}plateaux</div></div>`;renderShelves($('shelves-host'));refreshLabel();refreshScanBtn();}
-function renderShelves(host){if(!M.np){host.innerHTML='<div style="color:#aaa;padding:20px">Définis le nombre de plateaux →</div>';return;}
-const t=TYPES.find(x=>x.code===M.type);const k=baseKey();const rows=[];for(let n=M.np;n>=1;n--){const cnt=scanned.filter(p=>p.key===k&&p.plateau===String(n)).length;const isActive=M.plateauActif===String(n);const zone=zoneRetail(n,M.np);rows.push(`<div class="shelf-row ${isActive?'active':''}"onclick="selectPlateau('${n}')"><div class="shelf-num">${n}</div><div class="shelf-info"><div class="shelf-label">Plateau ${n}</div><div class="shelf-count">${cnt}produit${cnt>1?'s':''}scanné${cnt>1?'s':''}</div></div><div class="shelf-zone"style="background:${zone.color}33;color:${zone.color}">${zone.label}</div></div>`);}
-host.innerHTML=`<div class="shelf-stack">${rows.join('')}</div>`;}
-function zoneRetail(n,total){const ratio=n/total;if(total===1)return{color:'#FFC107',label:'Or'};if(ratio>0.85)return{color:'#9E9E9E',label:'Argent'};if(ratio>0.55)return{color:'#FFC107',label:'Or'};if(ratio>0.30)return{color:'#CD7F32',label:'Bronze'};return{color:'#607D8B',label:'Plomb'};}
-function setFace(f){M.face=f;M.plateauActif=null;refreshVisual();}
-function selectPlateau(n){M.plateauActif=String(n);refreshLabel();refreshVisual();refreshScanBtn();}
-function baseKey(){if(!M.type)return'';let k=`${M.type}${M.num}`;const t=TYPES.find(x=>x.code===M.type);if(t?.faces)k+=`_F${M.face}`;return k;}
-function refreshScanBtn(){$('scan-btn').disabled=!(M.type&&M.plateauActif);}
-function openCamera(){if(!M.type||!M.plateauActif){toast('Choisis un plateau','red');return;}
-$('cam-info').textContent=`${baseKey()}· Plateau ${M.plateauActif}`;$('cam-info-sub').textContent=`${countCurrent()}déjà scannés`;$('cam-count').textContent=countCurrent();$('cam-overlay').classList.add('show');startCamera();}
-function closeCamera(){stopCamera();$('cam-overlay').classList.remove('show');refreshVisual();}
-function countCurrent(){return scanned.filter(p=>p.key===baseKey()&&p.plateau===M.plateauActif).length;}
-async function startCamera(){if(typeof ZXing==='undefined'){$('cam-status').textContent='⚠️ Librairie scan non chargée (vérifie ta connexion)';return;}
-try{const hints=new Map();const fmts=[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,];hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,fmts);hints.set(ZXing.DecodeHintType.TRY_HARDER,true);zxingReader=new ZXing.BrowserMultiFormatReader(hints,200);$('cam-status').textContent='Cherche un code-barres…';await zxingReader.decodeFromConstraints({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}},'video',(result,err)=>{if(result){const ean=result.getText();const now=Date.now();if(ean!==lastEan||now-lastEanTime>2500){lastEan=ean;lastEanTime=now;onEanDetected(ean);}}});}catch(err){console.error(err);$('cam-status').textContent='🔒 Caméra refusée — utilise Saisir';}}
-function stopCamera(){if(zxingReader){try{zxingReader.reset();}catch(e){}
-zxingReader=null;}}
-async function lookupEAN(ean){try{const r=await fetch(`https:const d=await r.json();if(d.status===1&&d.product){const nom=d.product.product_name_fr||d.product.product_name||'';const marque=d.product.brands||'';if(nom)return{nom,marque,source:'OBF'};}}catch(e){}
-try{const r=await fetch(`https:const d=await r.json();if(d.status===1&&d.product){const nom=d.product.product_name_fr||d.product.product_name||'';const marque=d.product.brands||'';if(nom)return{nom,marque,source:'OFF'};}}catch(e){}
-return{nom:'',marque:'',source:'inconnu'};}
-async function onEanDetected(ean){const k=baseKey();const dup=scanned.find(p=>p.ean===ean&&p.key===k&&p.plateau===M.plateauActif);if(dup){toast('Déjà scanné ✓');return;}
-vibrate(60);$('cam-status').textContent=`EAN ${ean}…`;toast(`📷 ${ean}`,'green');const info=await lookupEAN(ean);scanned.push({ean,nom:info.nom||`Produit ${ean}`,marque:info.marque||'',source:info.source,key:k,plateau:M.plateauActif,});refreshCount();$('cam-count').textContent=countCurrent();toast((info.nom||`EAN ${ean}`).substring(0,38),'green');$('cam-status').textContent='Cherche un code-barres…';}
-function refreshCount(){$('count-num').textContent=scanned.length;}
-function manualEan(){$('inp-ean').value='';openModal('modal-ean');setTimeout(()=>$('inp-ean').focus(),200);}
-function onEanInput(inp){const v=inp.value.replace(/\D/g,'');inp.value=v;if(v.length===13)addManual();}
-async function addManual(){const v=$('inp-ean').value.trim();if(v.length<8){toast('EAN trop court','red');return;}
-closeModal('modal-ean');await onEanDetected(v);}
-function showList(){const body=$('list-body');if(scanned.length===0){body.innerHTML='<div style="text-align:center;color:#aaa;padding:40px;font-style:italic">Aucun produit scanné</div>';}else{const groups={};scanned.forEach(p=>{const k=`${p.key}__${p.plateau}`;if(!groups[k])groups[k]={key:p.key,plateau:p.plateau,items:[]};groups[k].items.push(p);});body.innerHTML=Object.values(groups).map(g=>`<div class="list-group"><div class="list-group-title">${g.key}· Plateau ${g.plateau}<span class="list-group-count">${g.items.length}</span></div>${g.items.map(p=>`<div class="list-item"><span class="list-tag">${p.source==='inconnu'?'?':p.source==='OBF'?'B':p.source==='OFF'?'F':'M'}</span><div class="list-info"><div class="list-nom">${p.nom}</div><div class="list-ean">${p.ean}${p.marque?' · '+p.marque:''}</div></div><button class="list-del"onclick="removeOne('${p.ean}','${p.key}','${p.plateau}')">✕</button></div>`).join('')}</div>`).join('');}
-const nbPlat=new Set(scanned.map(p=>p.key+'__'+p.plateau)).size;$('list-sub').textContent=`${scanned.length}produit${scanned.length>1?'s':''}sur ${nbPlat}plateau${nbPlat>1?'x':''}`;openModal('modal-list');}
-function removeOne(ean,key,pl){scanned=scanned.filter(p=>!(p.ean===ean&&p.key===key&&p.plateau===pl));refreshCount();refreshVisual();showList();}
-function clearAll(){if(scanned.length===0)return;if(!confirm(`Effacer les ${scanned.length}produits scannés?`))return;scanned=[];refreshCount();refreshVisual();closeModal('modal-list');}
-function exportData(){if(scanned.length===0){toast('Rien à exporter','red');return;}
-const groups={};scanned.forEach(p=>{if(!groups[p.key])groups[p.key]={meuble:p.key,plateaux:{}};if(!groups[p.key].plateaux[p.plateau])groups[p.key].plateaux[p.plateau]=[];groups[p.key].plateaux[p.plateau].push({ean:p.ean,nom:p.nom,marque:p.marque,source_lookup:p.source,a_enrichir:p.source==='inconnu',});});const data={date_scan:new Date().toISOString().slice(0,16).replace('T',' '),nb_total:scanned.length,meubles:Object.values(groups).map(g=>({meuble:g.meuble,plateaux:Object.entries(g.plateaux).map(([num,prods])=>({numero:num,produits:prods})),})),};const json=JSON.stringify(data,null,2);const blob=new Blob([json],{type:'application/json'});const url=URL.createObjectURL(blob);const dt=new Date().toISOString().slice(0,10);const a=document.createElement('a');a.href=url;a.download=`scan_merchi_${dt}.json`;a.click();URL.revokeObjectURL(url);toast('📤 Fichier téléchargé','green');}</script>
+
+// ════════════════════════════════════════
+// MODAL TYPE
+// ════════════════════════════════════════
+function openType(){
+  const grid = $('type-grid');
+  grid.innerHTML = TYPES.map(t => `
+    <div class="type-card${M.type===t.code?' active':''}" data-code="${t.code}" onclick="selectType('${t.code}')">
+      <div class="type-card-code">${t.code}</div>
+      <div class="type-card-lbl">${t.label}</div>
+    </div>
+  `).join('');
+  $('inp-id').value = M.num || '01';
+  openModal('modal-type');
+}
+
+function selectType(code){
+  document.querySelectorAll('.type-card').forEach(el=>el.classList.toggle('active', el.dataset.code===code));
+  M.type = code;
+}
+
+function confirmType(){
+  if(!M.type){toast('Choisis un type', 'red'); return;}
+  let num = $('inp-id').value.trim();
+  if(!num){toast('Numéro requis', 'red'); return;}
+  if(num.length === 1) num = '0' + num;
+  M.num = num;
+
+  // Si dimensions pas définies → ouvrir modal dims
+  closeModal('modal-type');
+  if(!M.h || !M.l){
+    const d = DEFAULT_DIMS[M.type] || {h:200,l:100,np:5};
+    M.h = d.h; M.l = d.l; M.np = d.np;
+  }
+  $('btn-type-val').textContent = M.type + M.num;
+  $('btn-dims').disabled = false;
+  refreshLabel();
+  refreshVisual();
+
+  if(!M.np && TYPES.find(t=>t.code===M.type)?.plateaux){
+    setTimeout(openDims, 250);
+  }
+}
+
+// ════════════════════════════════════════
+// MODAL DIMENSIONS
+// ════════════════════════════════════════
+function openDims(){
+  if(!M.type){toast('Choisis un type d\'abord', 'red'); return;}
+  const d = DEFAULT_DIMS[M.type] || {h:200,l:100,np:5};
+  $('inp-h').value = M.h || d.h;
+  $('inp-l').value = M.l || d.l;
+  $('inp-np').value = M.np || d.np;
+  const t = TYPES.find(t=>t.code===M.type);
+  $('modal-dims-sub').textContent = t.plateaux
+    ? 'Hauteur, largeur et nombre de plateaux'
+    : 'Hauteur et largeur (pas de plateaux)';
+  openModal('modal-dims');
+}
+
+function confirmDims(){
+  M.h = parseInt($('inp-h').value) || 0;
+  M.l = parseInt($('inp-l').value) || 0;
+  M.np = parseInt($('inp-np').value) || 0;
+  $('btn-dims-val').textContent = `${M.h}×${M.l}`;
+  closeModal('modal-dims');
+  refreshVisual();
+}
+
+// ════════════════════════════════════════
+// VISUEL MEUBLE
+// ════════════════════════════════════════
+function refreshLabel(){
+  if(!M.type){
+    $('meuble-label').textContent = '— Aucun meuble —';
+    $('plateau-label').textContent = 'Tape un plateau';
+    return;
+  }
+  const t = TYPES.find(x=>x.code===M.type);
+  let label = `${M.type}${M.num}`;
+  if(t.faces) label += ` Face ${M.face}`;
+  $('meuble-label').textContent = label;
+  $('plateau-label').textContent = M.plateauActif
+    ? `Plateau ${M.plateauActif} sélectionné`
+    : 'Tape un plateau pour scanner';
+}
+
+function refreshVisual(){
+  const area = $('visual-area');
+  if(!M.type){return;}
+  const t = TYPES.find(x=>x.code===M.type);
+
+  // Pas de plateaux (BV, TA) → bloc simple
+  if(!t.plateaux){
+    const k = `${M.type}${M.num}`;
+    const cnt = scanned.filter(p=>p.key===k).length;
+    area.innerHTML = `<div class="visual-meuble">
+      <div class="meuble-title">${M.type}${M.num} — ${t.label.toUpperCase()}</div>
+      <div class="shelf-simple ${M.plateauActif==='1'?'active':''}" onclick="selectPlateau('1')">
+        <div style="font-size:24px;margin-bottom:6px">${t.icon}</div>
+        <div style="font-weight:700;font-size:14px">${t.label}</div>
+        <div style="font-size:11px;color:#aaa;margin-top:6px">${cnt} produit${cnt>1?'s':''}</div>
+      </div>
+      <div class="meuble-dims">${M.h}h × ${M.l}l cm</div>
+    </div>`;
+    M.plateauActif = '1';
+    refreshLabel();
+    refreshScanBtn();
+    return;
+  }
+
+  // Gondole : 2 faces
+  if(t.faces){
+    area.innerHTML = `<div class="visual-meuble">
+      <div class="meuble-title">${M.type}${M.num}</div>
+      <div class="face-toggle" style="background:#3a3a3a;width:100%">
+        <button class="face-btn ${M.face==='A'?'active':''}" onclick="setFace('A')">Face A</button>
+        <button class="face-btn ${M.face==='B'?'active':''}" onclick="setFace('B')">Face B</button>
+      </div>
+      <div id="shelves-host"></div>
+      <div class="meuble-dims">${M.h}h × ${M.l}l × ${M.np} plateaux</div>
+    </div>`;
+    renderShelves($('shelves-host'));
+    refreshLabel();
+    refreshScanBtn();
+    return;
+  }
+
+  // Mural / TG / CO / ML / MO / GC : pile de plateaux
+  area.innerHTML = `<div class="visual-meuble">
+    <div class="meuble-title">${M.type}${M.num}</div>
+    <div id="shelves-host"></div>
+    <div class="meuble-dims">${M.h}h × ${M.l}l × ${M.np} plateaux</div>
+  </div>`;
+  renderShelves($('shelves-host'));
+  refreshLabel();
+  refreshScanBtn();
+}
+
+function renderShelves(host){
+  if(!M.np){host.innerHTML = '<div style="color:#aaa;padding:20px">Définis le nombre de plateaux →</div>'; return;}
+  const t = TYPES.find(x=>x.code===M.type);
+  const k = baseKey();
+  const rows = [];
+  // Numérotation : top → bot avec plateau N en haut
+  for(let n = M.np; n >= 1; n--){
+    const cnt = scanned.filter(p => p.key===k && p.plateau===String(n)).length;
+    const isActive = M.plateauActif === String(n);
+    const zone = zoneRetail(n, M.np);
+    rows.push(`<div class="shelf-row ${isActive?'active':''}" onclick="selectPlateau('${n}')">
+      <div class="shelf-num">${n}</div>
+      <div class="shelf-info">
+        <div class="shelf-label">Plateau ${n}</div>
+        <div class="shelf-count">${cnt} produit${cnt>1?'s':''} scanné${cnt>1?'s':''}</div>
+      </div>
+      <div class="shelf-zone" style="background:${zone.color}33;color:${zone.color}">${zone.label}</div>
+    </div>`);
+  }
+  host.innerHTML = `<div class="shelf-stack">${rows.join('')}</div>`;
+}
+
+function zoneRetail(n, total){
+  // Plateau 1 = sol, plateau total = haut
+  // Or = ~yeux/mains, argent = haut, bronze = milieu/bas, plomb = sol/très haut
+  const ratio = n / total;
+  if(total === 1) return {color:'#FFC107', label:'Or'};
+  if(ratio > 0.85) return {color:'#9E9E9E', label:'Argent'};
+  if(ratio > 0.55) return {color:'#FFC107', label:'Or'};
+  if(ratio > 0.30) return {color:'#CD7F32', label:'Bronze'};
+  return {color:'#607D8B', label:'Plomb'};
+}
+
+function setFace(f){
+  M.face = f;
+  M.plateauActif = null;
+  refreshVisual();
+}
+
+function selectPlateau(n){
+  M.plateauActif = String(n);
+  refreshLabel();
+  refreshVisual();
+  refreshScanBtn();
+}
+
+function baseKey(){
+  if(!M.type) return '';
+  let k = `${M.type}${M.num}`;
+  const t = TYPES.find(x=>x.code===M.type);
+  if(t?.faces) k += `_F${M.face}`;
+  return k;
+}
+
+function refreshScanBtn(){
+  $('scan-btn').disabled = !(M.type && M.plateauActif);
+}
+
+// ════════════════════════════════════════
+// CAMÉRA
+// ════════════════════════════════════════
+function openCamera(){
+  if(!M.type || !M.plateauActif){toast('Choisis un plateau', 'red'); return;}
+  $('cam-info').textContent = `${baseKey()} · Plateau ${M.plateauActif}`;
+  $('cam-info-sub').textContent = `${countCurrent()} déjà scannés`;
+  $('cam-count').textContent = countCurrent();
+  $('cam-overlay').classList.add('show');
+  startCamera();
+}
+
+function closeCamera(){
+  stopCamera();
+  $('cam-overlay').classList.remove('show');
+  refreshVisual();
+}
+
+function countCurrent(){
+  return scanned.filter(p => p.key===baseKey() && p.plateau===M.plateauActif).length;
+}
+
+async function startCamera(){
+  if(typeof ZXing === 'undefined'){
+    $('cam-status').textContent = '⚠️ Librairie scan non chargée (vérifie ta connexion)';
+    return;
+  }
+  try{
+    // Limiter aux formats parapharma : EAN_13 surtout, plus EAN_8 / UPC / Code128
+    const hints = new Map();
+    const fmts = [
+      ZXing.BarcodeFormat.EAN_13,
+      ZXing.BarcodeFormat.EAN_8,
+      ZXing.BarcodeFormat.UPC_A,
+      ZXing.BarcodeFormat.UPC_E,
+      ZXing.BarcodeFormat.CODE_128,
+    ];
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, fmts);
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    zxingReader = new ZXing.BrowserMultiFormatReader(hints, 200);
+
+    $('cam-status').textContent = 'Cherche un code-barres…';
+    await zxingReader.decodeFromConstraints(
+      {video: {facingMode: {ideal: 'environment'}, width:{ideal:1280}, height:{ideal:720}}},
+      'video',
+      (result, err) => {
+        if(result){
+          const ean = result.getText();
+          const now = Date.now();
+          if(ean !== lastEan || now - lastEanTime > 2500){
+            lastEan = ean; lastEanTime = now;
+            onEanDetected(ean);
+          }
+        }
+      }
+    );
+  }catch(err){
+    console.error(err);
+    $('cam-status').textContent = '🔒 Caméra refusée — utilise Saisir';
+  }
+}
+
+function stopCamera(){
+  if(zxingReader){
+    try{ zxingReader.reset(); }catch(e){}
+    zxingReader = null;
+  }
+}
+
+// ════════════════════════════════════════
+// LOOKUP EAN
+// ════════════════════════════════════════
+async function lookupEAN(ean){
+  try{
+    const r = await fetch(`https://world.openbeautyfacts.org/api/v0/product/${ean}.json`, {signal:AbortSignal.timeout(3500)});
+    const d = await r.json();
+    if(d.status === 1 && d.product){
+      const nom = d.product.product_name_fr || d.product.product_name || '';
+      const marque = d.product.brands || '';
+      if(nom) return {nom, marque, source:'OBF'};
+    }
+  }catch(e){}
+  try{
+    const r = await fetch(`https://world.openfoodfacts.org/api/v0/product/${ean}.json`, {signal:AbortSignal.timeout(3500)});
+    const d = await r.json();
+    if(d.status === 1 && d.product){
+      const nom = d.product.product_name_fr || d.product.product_name || '';
+      const marque = d.product.brands || '';
+      if(nom) return {nom, marque, source:'OFF'};
+    }
+  }catch(e){}
+  return {nom:'', marque:'', source:'inconnu'};
+}
+
+// ════════════════════════════════════════
+// AJOUT PRODUIT
+// ════════════════════════════════════════
+async function onEanDetected(ean){
+  const k = baseKey();
+  const dup = scanned.find(p => p.ean===ean && p.key===k && p.plateau===M.plateauActif);
+  if(dup){toast('Déjà scanné ✓'); return;}
+
+  vibrate(60);
+  $('cam-status').textContent = `EAN ${ean}…`;
+  toast(`📷 ${ean}`, 'green');
+
+  const info = await lookupEAN(ean);
+  scanned.push({
+    ean,
+    nom: info.nom || `Produit ${ean}`,
+    marque: info.marque || '',
+    source: info.source,
+    key: k, plateau: M.plateauActif,
+  });
+  refreshCount();
+  $('cam-count').textContent = countCurrent();
+  toast((info.nom || `EAN ${ean}`).substring(0, 38), 'green');
+  $('cam-status').textContent = 'Cherche un code-barres…';
+}
+
+function refreshCount(){
+  $('count-num').textContent = scanned.length;
+}
+
+// ════════════════════════════════════════
+// SAISIE MANUELLE
+// ════════════════════════════════════════
+function manualEan(){
+  $('inp-ean').value = '';
+  openModal('modal-ean');
+  setTimeout(()=>$('inp-ean').focus(), 200);
+}
+
+function onEanInput(inp){
+  const v = inp.value.replace(/\D/g, '');
+  inp.value = v;
+  if(v.length === 13) addManual();
+}
+
+async function addManual(){
+  const v = $('inp-ean').value.trim();
+  if(v.length < 8){toast('EAN trop court', 'red'); return;}
+  closeModal('modal-ean');
+  await onEanDetected(v);
+}
+
+// ════════════════════════════════════════
+// LISTE
+// ════════════════════════════════════════
+function showList(){
+  const body = $('list-body');
+  if(scanned.length === 0){
+    body.innerHTML = '<div style="text-align:center;color:#aaa;padding:40px;font-style:italic">Aucun produit scanné</div>';
+  } else {
+    const groups = {};
+    scanned.forEach(p => {
+      const k = `${p.key}__${p.plateau}`;
+      if(!groups[k]) groups[k] = {key:p.key, plateau:p.plateau, items:[]};
+      groups[k].items.push(p);
+    });
+    body.innerHTML = Object.values(groups).map(g => `
+      <div class="list-group">
+        <div class="list-group-title">${g.key} · Plateau ${g.plateau} <span class="list-group-count">${g.items.length}</span></div>
+        ${g.items.map(p => `<div class="list-item">
+          <span class="list-tag">${p.source==='inconnu'?'?':p.source==='OBF'?'B':p.source==='OFF'?'F':'M'}</span>
+          <div class="list-info">
+            <div class="list-nom">${p.nom}</div>
+            <div class="list-ean">${p.ean}${p.marque?' · '+p.marque:''}</div>
+          </div>
+          <button class="list-del" onclick="removeOne('${p.ean}','${p.key}','${p.plateau}')">✕</button>
+        </div>`).join('')}
+      </div>
+    `).join('');
+  }
+  const nbPlat = new Set(scanned.map(p => p.key+'__'+p.plateau)).size;
+  $('list-sub').textContent = `${scanned.length} produit${scanned.length>1?'s':''} sur ${nbPlat} plateau${nbPlat>1?'x':''}`;
+  openModal('modal-list');
+}
+
+function removeOne(ean, key, pl){
+  scanned = scanned.filter(p => !(p.ean===ean && p.key===key && p.plateau===pl));
+  refreshCount();
+  refreshVisual();
+  showList();
+}
+
+function clearAll(){
+  if(scanned.length === 0) return;
+  if(!confirm(`Effacer les ${scanned.length} produits scannés ?`)) return;
+  scanned = [];
+  refreshCount();
+  refreshVisual();
+  closeModal('modal-list');
+}
+
+// ════════════════════════════════════════
+// EXPORT
+// ════════════════════════════════════════
+function exportData(){
+  if(scanned.length === 0){toast('Rien à exporter', 'red'); return;}
+  const groups = {};
+  scanned.forEach(p => {
+    if(!groups[p.key]) groups[p.key] = {meuble: p.key, plateaux: {}};
+    if(!groups[p.key].plateaux[p.plateau]) groups[p.key].plateaux[p.plateau] = [];
+    groups[p.key].plateaux[p.plateau].push({
+      ean: p.ean, nom: p.nom, marque: p.marque,
+      source_lookup: p.source, a_enrichir: p.source==='inconnu',
+    });
+  });
+  const data = {
+    date_scan: new Date().toISOString().slice(0, 16).replace('T', ' '),
+    nb_total: scanned.length,
+    meubles: Object.values(groups).map(g => ({
+      meuble: g.meuble,
+      plateaux: Object.entries(g.plateaux).map(([num, prods]) => ({numero: num, produits: prods})),
+    })),
+  };
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const dt = new Date().toISOString().slice(0, 10);
+  const a = document.createElement('a');
+  a.href = url; a.download = `scan_merchi_${dt}.json`; a.click();
+  URL.revokeObjectURL(url);
+  toast('📤 Fichier téléchargé', 'green');
+}
+</script>
 </body>
 </html>
