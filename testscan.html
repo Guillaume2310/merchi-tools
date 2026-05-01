@@ -884,15 +884,27 @@ async function lookupEAN(ean){
 // ════════════════════════════════════════
 async function onEanDetected(ean){
   const k = baseKey();
-  const dup = scanned.find(p => p.ean===ean && p.key===k && p.plateau===M.plateauActif);
-  if(dup){beepError(); vibrate(150); toast('Déjà scanné ✓'); return;}
 
-  vibrate([40, 30, 40]);  // double tap = retour clair
-  beep();                 // ding-ding type caisse magasin
+  // Doublon EXACT : même produit + même meuble + même plateau → on refuse
+  const dupExact = scanned.find(p => p.ean===ean && p.key===k && p.plateau===M.plateauActif);
+  if(dupExact){beepError(); vibrate(150); toast('Déjà scanné sur ce plateau ✓', 'red'); return;}
+
+  // Multi-placement : même EAN ailleurs (autre meuble OU autre plateau) → on l'autorise + alerte
+  const autresPlacements = scanned.filter(p => p.ean===ean);
+  const isMultiPlacement = autresPlacements.length > 0;
+
+  vibrate([40, 30, 40]);
+  beep();
   $('cam-status').textContent = `EAN ${ean}…`;
-  toast(`📷 ${ean}`, 'green');
 
-  const info = await lookupEAN(ean);
+  // Si on a déjà ce produit ailleurs → réutilise les infos déjà trouvées (pas besoin de rappeler l'API)
+  let info;
+  if(isMultiPlacement){
+    info = {nom: autresPlacements[0].nom, marque: autresPlacements[0].marque, source: autresPlacements[0].source};
+  } else {
+    info = await lookupEAN(ean);
+  }
+
   scanned.push({
     ean,
     nom: info.nom || `Produit ${ean}`,
@@ -902,7 +914,14 @@ async function onEanDetected(ean){
   });
   refreshCount();
   $('cam-count').textContent = countCurrent();
-  toast((info.nom || `EAN ${ean}`).substring(0, 38), 'green');
+
+  if(isMultiPlacement){
+    // Affiche où le produit est déjà placé
+    const lieux = autresPlacements.map(p => `${p.key} P${p.plateau}`).join(', ');
+    toast(`✅ Aussi sur ${lieux}`, 'green');
+  } else {
+    toast((info.nom || `EAN ${ean}`).substring(0, 38), 'green');
+  }
   $('cam-status').textContent = 'Cherche un code-barres…';
 }
 
