@@ -394,6 +394,21 @@ function $(id){return document.getElementById(id);}
 function hide(id){$(id).style.display='none';}
 function vibrate(p){if(navigator.vibrate)navigator.vibrate(p);}
 
+// Bip sonore court — feedback instantané au scan
+let _audioCtx = null;
+function beep(freq=880, dur=80){
+  try{
+    if(!_audioCtx) _audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = _audioCtx.createOscillator(), gain = _audioCtx.createGain();
+    osc.frequency.value = freq; osc.type = 'sine';
+    gain.gain.setValueAtTime(0.0001, _audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.25, _audioCtx.currentTime+0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, _audioCtx.currentTime+dur/1000);
+    osc.connect(gain); gain.connect(_audioCtx.destination);
+    osc.start(); osc.stop(_audioCtx.currentTime+dur/1000);
+  }catch(e){}
+}
+
 function toast(msg, type=''){
   const t = $('toast');
   t.textContent = msg; t.className = 'toast ' + type + ' show';
@@ -648,14 +663,22 @@ async function startCamera(){
     ];
 
     const config = {
-      fps: 10,
-      qrbox: undefined,            // pas de cadre forcé — utilise toute la zone
+      fps: 20,                     // 2× plus rapide (10 → 20 frames/s analysées)
+      // Zone de scan ciblée : rectangle large au centre (codes-barres = horizontaux)
+      qrbox: (vw, vh) => {
+        const w = Math.min(vw * 0.85, 360);
+        const h = Math.min(vh * 0.30, 140);
+        return {width: Math.round(w), height: Math.round(h)};
+      },
       aspectRatio: undefined,
       formatsToSupport: formats,
+      // Active BarcodeDetector natif si dispo (Chrome Android, iOS 17+) → 5-10× plus rapide
       experimentalFeatures: {useBarCodeDetectorIfSupported: true},
+      // 720p suffit largement pour un EAN-13, et c'est plus rapide à traiter
       videoConstraints: {
         facingMode: {ideal: 'environment'},
-        width: {ideal: 1920}, height: {ideal: 1080},
+        width: {ideal: 1280}, height: {ideal: 720},
+        focusMode: 'continuous',
       },
     };
 
@@ -725,7 +748,8 @@ async function onEanDetected(ean){
   const dup = scanned.find(p => p.ean===ean && p.key===k && p.plateau===M.plateauActif);
   if(dup){toast('Déjà scanné ✓'); return;}
 
-  vibrate(60);
+  vibrate([40, 30, 40]);  // double tap = retour clair
+  beep(900, 70);          // bip aigu court
   $('cam-status').textContent = `EAN ${ean}…`;
   toast(`📷 ${ean}`, 'green');
 
