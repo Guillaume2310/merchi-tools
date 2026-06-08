@@ -195,6 +195,9 @@ input:focus{outline:none;border-color:var(--teal)}
 .welcome-title{font-size:22px;font-weight:700;margin-bottom:10px}
 .welcome-sub{font-size:13px;opacity:.75;max-width:300px;margin-bottom:30px;line-height:1.6}
 .welcome-btn{background:var(--gold);color:#1a4a5a;font-weight:700;padding:15px 40px;border-radius:30px;border:none;font-size:15px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.welcome-btn-sec{margin-top:18px;background:transparent;color:#fff;font-weight:600;padding:11px 24px;border-radius:24px;border:1.5px solid rgba(255,255,255,.45);font-size:13px;cursor:pointer}
+.welcome-btn-sec:active{filter:brightness(.8)}
+.welcome-base-status{margin-top:10px;font-size:11px;opacity:.7;min-height:14px}
 </style>
 </head>
 <body>
@@ -207,6 +210,9 @@ input:focus{outline:none;border-color:var(--teal)}
     Choisis le type de meuble, ses dimensions, puis tape sur le plateau et scanne les produits.
   </div>
   <button class="welcome-btn" onclick="initAudio();hide('welcome');openType()">▶ Commencer</button>
+  <button class="welcome-btn-sec" onclick="document.getElementById('file-base').click()">📦 Charger ma base produits</button>
+  <div class="welcome-base-status" id="base-status">Aucune base locale — recherche via APIs en ligne</div>
+  <input type="file" id="file-base" accept=".json,application/json" style="display:none" onchange="loadBase(this)">
 </div>
 
 <!-- BARRE HAUT -->
@@ -411,6 +417,8 @@ let M = {            // meuble courant
 let scanned = [];     // [{ean, nom, marque, source, key}] où key = "M01" ou "G01_FA"
 let qrScanner = null;
 let lastEan = null, lastEanTime = 0;
+let PROD_BASE = {};   // base locale produits_reference.json (chargée par l'utilisateur, persistée en localStorage)
+const BASE_KEY = 'merchi_scan_base_v1';
 
 function $(id){return document.getElementById(id);}
 function hide(id){$(id).style.display='none';}
@@ -866,6 +874,12 @@ async function tapToFocus(ev){
 // LOOKUP EAN
 // ════════════════════════════════════════
 async function lookupEAN(ean){
+  // 1) Base locale (produits_reference.json) — prioritaire, instantanée, hors-ligne
+  const local = PROD_BASE[ean];
+  if(local && (local.nom || local.marque)){
+    return {nom: local.nom || '', marque: local.marque || '', source:'local'};
+  }
+  // 2) APIs publiques en cascade
   try{
     const r = await fetch(`https://world.openbeautyfacts.org/api/v0/product/${ean}.json`, {signal:AbortSignal.timeout(3500)});
     const d = await r.json();
@@ -977,7 +991,7 @@ function showList(){
       <div class="list-group">
         <div class="list-group-title">${g.key} · Plateau ${g.plateau} <span class="list-group-count">${g.items.length}</span></div>
         ${g.items.map(p => `<div class="list-item">
-          <span class="list-tag">${p.source==='inconnu'?'?':p.source==='OBF'?'B':p.source==='OFF'?'F':'M'}</span>
+          <span class="list-tag">${p.source==='inconnu'?'?':p.source==='local'?'L':p.source==='OBF'?'B':p.source==='OFF'?'F':'M'}</span>
           <div class="list-info">
             <div class="list-nom">${p.nom}</div>
             <div class="list-ean">${p.ean}${p.marque?' · '+p.marque:''}</div>
@@ -1039,6 +1053,49 @@ function exportData(){
   URL.revokeObjectURL(url);
   toast('📤 Fichier téléchargé', 'green');
 }
+
+// ════════════════════════════════════════
+// BASE LOCALE PRODUITS (produits_reference.json)
+// ════════════════════════════════════════
+function setBaseStatus(n){
+  const st = $('base-status');
+  if(!st) return;
+  st.textContent = n > 0
+    ? `📦 Base locale : ${n} produits — recherche locale prioritaire`
+    : 'Aucune base locale — recherche via APIs en ligne';
+}
+function applyBase(obj){
+  // Accepte {EAN: {nom, marque, ...}} OU {produits: {...}} (au cas où)
+  const base = (obj && obj.produits && typeof obj.produits === 'object') ? obj.produits : obj;
+  if(!base || typeof base !== 'object') throw new Error('format inattendu');
+  PROD_BASE = base;
+  const n = Object.keys(PROD_BASE).length;
+  setBaseStatus(n);
+  return n;
+}
+function loadBase(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const n = applyBase(JSON.parse(e.target.result));
+      try{ localStorage.setItem(BASE_KEY, JSON.stringify(PROD_BASE)); }catch(err){ toast('Base chargée mais trop volumineuse pour la mémoire du téléphone', 'red'); }
+      toast(`📦 Base chargée — ${n} produits`, 'green');
+    }catch(err){
+      toast('Erreur base : ' + err.message, 'red');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+function loadBaseFromStorage(){
+  try{
+    const raw = localStorage.getItem(BASE_KEY);
+    if(raw) applyBase(JSON.parse(raw));
+  }catch(e){}
+}
+loadBaseFromStorage();
 </script>
 </body>
 </html>
