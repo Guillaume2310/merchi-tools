@@ -181,6 +181,10 @@ input:focus{outline:none;border-color:var(--teal)}
 .list-nom{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#333}
 .list-ean{font-family:monospace;font-size:10px;color:#aaa}
 .list-del{background:none;border:none;font-size:20px;color:#ccc;cursor:pointer;padding:0 6px}
+.qte-ctrl{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.qte-btn{width:28px;height:28px;border-radius:8px;border:1.5px solid var(--teal);background:#fff;color:var(--teal);font-size:18px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.qte-btn:active{background:var(--teal);color:#fff}
+.qte-val{min-width:26px;text-align:center;font-weight:700;font-size:15px;cursor:pointer;text-decoration:underline;text-decoration-style:dotted}
 .list-del:active{color:var(--red)}
 
 /* ─── TOAST ─── */
@@ -419,6 +423,11 @@ let qrScanner = null;
 let lastEan = null, lastEanTime = 0;
 let PROD_BASE = {};   // base locale produits_reference.json (chargée par l'utilisateur, persistée en localStorage)
 const BASE_KEY = 'merchi_scan_base_v1';
+const SESSION_KEY = 'merchi_scan_session_v1'; // sauvegarde auto des produits scannés (résiste au refresh)
+
+// Total d'unités (somme des quantités) sur un sous-ensemble de scanned
+function unitsOf(arr){ return arr.reduce((s,p)=>s+(p.qte||1),0); }
+function totalUnits(){ return unitsOf(scanned); }
 
 function $(id){return document.getElementById(id);}
 function hide(id){$(id).style.display='none';}
@@ -558,6 +567,7 @@ function confirmDims(){
 // VISUEL MEUBLE
 // ════════════════════════════════════════
 function refreshLabel(){
+  persistSession();
   if(!M.type){
     $('meuble-label').textContent = '— Aucun meuble —';
     $('plateau-label').textContent = 'Tape un plateau';
@@ -580,7 +590,7 @@ function refreshVisual(){
   // Pas de plateaux (BV, TA) → bloc simple
   if(!t.plateaux){
     const k = `${M.type}${M.num}`;
-    const cnt = scanned.filter(p=>p.key===k).length;
+    const cnt = unitsOf(scanned.filter(p=>p.key===k));
     area.innerHTML = `<div class="visual-meuble">
       <div class="meuble-title">${M.type}${M.num} — ${t.label.toUpperCase()}</div>
       <div class="shelf-simple ${M.plateauActif==='1'?'active':''}" onclick="selectPlateau('1')">
@@ -631,7 +641,7 @@ function renderShelves(host){
   const rows = [];
   // Numérotation : top → bot avec plateau N en haut
   for(let n = M.np; n >= 1; n--){
-    const cnt = scanned.filter(p => p.key===k && p.plateau===String(n)).length;
+    const cnt = unitsOf(scanned.filter(p => p.key===k && p.plateau===String(n)));
     const isActive = M.plateauActif === String(n);
     const zone = zoneRetail(n, M.np);
     rows.push(`<div class="shelf-row ${isActive?'active':''}" onclick="selectPlateau('${n}')">
@@ -703,7 +713,7 @@ function closeCamera(){
 }
 
 function countCurrent(){
-  return scanned.filter(p => p.key===baseKey() && p.plateau===M.plateauActif).length;
+  return unitsOf(scanned.filter(p => p.key===baseKey() && p.plateau===M.plateauActif));
 }
 
 async function startCamera(){
@@ -907,9 +917,17 @@ async function lookupEAN(ean){
 async function onEanDetected(ean){
   const k = baseKey();
 
-  // Doublon EXACT : même produit + même meuble + même plateau → on refuse
+  // Doublon EXACT : même produit + même meuble + même plateau → on incrémente la quantité
   const dupExact = scanned.find(p => p.ean===ean && p.key===k && p.plateau===M.plateauActif);
-  if(dupExact){beepError(); vibrate(150); toast('Déjà scanné sur ce plateau ✓', 'red'); return;}
+  if(dupExact){
+    dupExact.qte = (dupExact.qte||1) + 1;
+    beep(); vibrate(60);
+    refreshCount();
+    $('cam-count').textContent = countCurrent();
+    toast(`✓ ${(dupExact.nom||'EAN '+ean).substring(0,26)} ×${dupExact.qte}`, 'green');
+    $('cam-status').textContent = 'Cherche un code-barres…';
+    return;
+  }
 
   // Multi-placement : même EAN ailleurs (autre meuble OU autre plateau) → on l'autorise + alerte
   const autresPlacements = scanned.filter(p => p.ean===ean);
@@ -933,6 +951,7 @@ async function onEanDetected(ean){
     marque: info.marque || '',
     source: info.source,
     key: k, plateau: M.plateauActif,
+    qte: 1,
   });
   refreshCount();
   $('cam-count').textContent = countCurrent();
@@ -948,7 +967,8 @@ async function onEanDetected(ean){
 }
 
 function refreshCount(){
-  $('count-num').textContent = scanned.length;
+  $('count-num').textContent = totalUnits();
+  persistSession();
 }
 
 // ════════════════════════════════════════
@@ -989,12 +1009,17 @@ function showList(){
     });
     body.innerHTML = Object.values(groups).map(g => `
       <div class="list-group">
-        <div class="list-group-title">${g.key} · Plateau ${g.plateau} <span class="list-group-count">${g.items.length}</span></div>
+        <div class="list-group-title">${g.key} · Plateau ${g.plateau} <span class="list-group-count">${unitsOf(g.items)}</span></div>
         ${g.items.map(p => `<div class="list-item">
           <span class="list-tag">${p.source==='inconnu'?'?':p.source==='local'?'L':p.source==='OBF'?'B':p.source==='OFF'?'F':'M'}</span>
           <div class="list-info">
             <div class="list-nom">${p.nom}</div>
             <div class="list-ean">${p.ean}${p.marque?' · '+p.marque:''}</div>
+          </div>
+          <div class="qte-ctrl">
+            <button class="qte-btn" onclick="changeQte('${p.ean}','${p.key}','${p.plateau}',-1)">−</button>
+            <span class="qte-val" onclick="setQte('${p.ean}','${p.key}','${p.plateau}')">${p.qte||1}</span>
+            <button class="qte-btn" onclick="changeQte('${p.ean}','${p.key}','${p.plateau}',1)">+</button>
           </div>
           <button class="list-del" onclick="removeOne('${p.ean}','${p.key}','${p.plateau}')">✕</button>
         </div>`).join('')}
@@ -1002,12 +1027,39 @@ function showList(){
     `).join('');
   }
   const nbPlat = new Set(scanned.map(p => p.key+'__'+p.plateau)).size;
-  $('list-sub').textContent = `${scanned.length} produit${scanned.length>1?'s':''} sur ${nbPlat} plateau${nbPlat>1?'x':''}`;
+  const u = totalUnits();
+  $('list-sub').textContent = `${u} unité${u>1?'s':''} · ${scanned.length} référence${scanned.length>1?'s':''} sur ${nbPlat} plateau${nbPlat>1?'x':''}`;
   openModal('modal-list');
 }
 
 function removeOne(ean, key, pl){
   scanned = scanned.filter(p => !(p.ean===ean && p.key===key && p.plateau===pl));
+  refreshCount();
+  refreshVisual();
+  showList();
+}
+
+// Quantité : −/+ d'une unité (0 → supprime la ligne)
+function changeQte(ean, key, pl, delta){
+  const p = scanned.find(x => x.ean===ean && x.key===key && x.plateau===pl);
+  if(!p) return;
+  p.qte = (p.qte||1) + delta;
+  if(p.qte < 1){ removeOne(ean, key, pl); return; }
+  refreshCount();
+  refreshVisual();
+  showList();
+}
+
+// Quantité : saisie directe (ex. 10) en tapant le nombre
+function setQte(ean, key, pl){
+  const p = scanned.find(x => x.ean===ean && x.key===key && x.plateau===pl);
+  if(!p) return;
+  const v = prompt(`Combien d'unités de "${p.nom}" ?`, p.qte||1);
+  if(v===null) return;
+  const n = parseInt(v, 10);
+  if(isNaN(n)) return;
+  if(n < 1){ removeOne(ean, key, pl); return; }
+  p.qte = n;
   refreshCount();
   refreshVisual();
   showList();
@@ -1032,7 +1084,7 @@ function exportData(){
     if(!groups[p.key]) groups[p.key] = {meuble: p.key, plateaux: {}};
     if(!groups[p.key].plateaux[p.plateau]) groups[p.key].plateaux[p.plateau] = [];
     groups[p.key].plateaux[p.plateau].push({
-      ean: p.ean, nom: p.nom, marque: p.marque,
+      ean: p.ean, nom: p.nom, marque: p.marque, quantite: p.qte||1,
       source_lookup: p.source, a_enrichir: p.source==='inconnu',
     });
   });
@@ -1096,6 +1148,28 @@ function loadBaseFromStorage(){
   }catch(e){}
 }
 loadBaseFromStorage();
+
+// ════════════════════════════════════════
+// SAUVEGARDE AUTO DE SESSION (résiste au refresh / fermeture d'onglet)
+// ════════════════════════════════════════
+function persistSession(){
+  try{ localStorage.setItem(SESSION_KEY, JSON.stringify({scanned, M})); }catch(e){}
+}
+function restoreSession(){
+  try{
+    const raw = localStorage.getItem(SESSION_KEY);
+    if(!raw) return;
+    const d = JSON.parse(raw);
+    if(Array.isArray(d.scanned)) scanned = d.scanned;
+    if(d.M && typeof d.M === 'object') M = Object.assign(M, d.M);
+  }catch(e){}
+  if(scanned.length){
+    refreshCount();
+    if(M.type){ hide('welcome'); refreshVisual(); }
+    toast(`↩︎ Session restaurée — ${totalUnits()} unité(s)`, 'green');
+  }
+}
+restoreSession();
 </script>
 </body>
 </html>
