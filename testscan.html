@@ -369,9 +369,12 @@ input:focus{outline:none;border-color:var(--teal)}
       </div>
     </div>
     <div class="list-body" id="list-body"></div>
-    <div style="padding:12px 14px;background:#fff;display:flex;gap:8px;border-top:1px solid #eee">
-      <button class="btn" style="background:#fce4ec;color:#c62828" onclick="clearAll()">🗑 Effacer</button>
-      <button class="btn btn-green" onclick="exportData()">📤 Exporter</button>
+    <div style="padding:12px 14px;background:#fff;border-top:1px solid #eee">
+      <div style="display:flex;gap:8px">
+        <button class="btn" style="background:#fce4ec;color:#c62828" onclick="clearAll()">🗑 Effacer</button>
+        <button class="btn btn-green" onclick="exportData()">📤 Exporter</button>
+      </div>
+      <button class="btn" style="margin-top:8px;width:100%;background:#fff;color:var(--teal);border:1.5px solid var(--teal)" onclick="newOfficine()">🆕 Nouvelle officine (tout remettre à zéro)</button>
     </div>
   </div>
 </div>
@@ -1067,11 +1070,22 @@ function setQte(ean, key, pl){
 
 function clearAll(){
   if(scanned.length === 0) return;
-  if(!confirm(`Effacer les ${scanned.length} produits scannés ?`)) return;
+  if(!confirm(`Effacer les ${totalUnits()} unité(s) scannées ?\n(Le meuble courant est conservé.)`)) return;
   scanned = [];
   refreshCount();
   refreshVisual();
   closeModal('modal-list');
+}
+
+// Nouvelle officine : remet TOUT à zéro (produits + meuble) et revient à l'accueil.
+// La base produits locale est conservée.
+function newOfficine(){
+  if(scanned.length){
+    if(!confirm(`Nouvelle officine : tout remettre à zéro ?\n\n${totalUnits()} unité(s) vont être effacées.\nPense à 📤 Exporter avant si ce n'est pas déjà fait.`)) return;
+  }
+  try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
+  scanned = [];
+  location.reload(); // recharge propre : écran d'accueil, meuble réinitialisé, base produits conservée
 }
 
 // ════════════════════════════════════════
