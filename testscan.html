@@ -424,6 +424,7 @@ let M = {            // meuble courant
 let scanned = [];     // [{ean, nom, marque, source, key}] où key = "M01" ou "G01_FA"
 let qrScanner = null;
 let lastEan = null, lastEanTime = 0;
+let scanBusy = false;  // verrou : empêche de traiter 2 détections caméra en même temps
 let PROD_BASE = {};   // base locale produits_reference.json (chargée par l'utilisateur, persistée en localStorage)
 const BASE_KEY = 'merchi_scan_base_v1';
 const SESSION_KEY = 'merchi_scan_session_v1'; // sauvegarde auto des produits scannés (résiste au refresh)
@@ -918,24 +919,13 @@ async function lookupEAN(ean){
 // ════════════════════════════════════════
 // AJOUT PRODUIT
 // ════════════════════════════════════════
-// Demande la quantité directement au scan (défaut 1 ; annuler/vide = 1)
-function askQte(label){
-  const v = prompt(`Combien d'unités de "${(label||'').substring(0,40)}" ?`, '1');
-  if(v === null) return 1;
-  const n = parseInt(v, 10);
-  return (isNaN(n) || n < 1) ? 1 : n;
-}
-
-let scanBusy = false; // verrou : empêche de traiter 2 détections en même temps
-
 async function onEanDetected(ean){
   if(scanBusy) return;            // un scan est déjà en cours de traitement → on ignore
   scanBusy = true;
   try{
     const k = baseKey();
 
-    // Déjà scanné sur CE plateau → on NE recompte PAS tout seul.
-    // La quantité se règle à la saisie au scan, ou via +/− dans la liste 📋.
+    // Déjà scanné sur CE plateau → message rouge, on ne recompte pas (ajuste dans la liste).
     const dupExact = scanned.find(p => p.ean===ean && p.key===k && p.plateau===M.plateauActif);
     if(dupExact){
       lastEan = ean; lastEanTime = Date.now();   // bloque un re-déclenchement immédiat
@@ -949,6 +939,8 @@ async function onEanDetected(ean){
     const autresPlacements = scanned.filter(p => p.ean===ean);
     const isMultiPlacement = autresPlacements.length > 0;
 
+    vibrate([40, 30, 40]);
+    beep();
     $('cam-status').textContent = `EAN ${ean}…`;
 
     // Si on a déjà ce produit ailleurs → réutilise les infos (pas besoin de rappeler l'API)
@@ -960,25 +952,24 @@ async function onEanDetected(ean){
     }
 
     const nomProd = info.nom || `Produit ${ean}`;
-    const qte = askQte(nomProd);                 // demande le nombre directement
-    lastEan = ean; lastEanTime = Date.now();     // recale le délai anti-rescan après la saisie
-    beep(); vibrate([40, 30, 40]);               // feedback APRÈS confirmation de la quantité
+    lastEan = ean; lastEanTime = Date.now();
+    // Ajout direct en quantité 1 — on ajuste ensuite dans la liste (−/+ ou tap sur le nombre).
     scanned.push({
       ean,
       nom: nomProd,
       marque: info.marque || '',
       source: info.source,
       key: k, plateau: M.plateauActif,
-      qte,
+      qte: 1,
     });
     refreshCount();
     $('cam-count').textContent = countCurrent();
 
     if(isMultiPlacement){
       const lieux = autresPlacements.map(p => `${p.key} P${p.plateau}`).join(', ');
-      toast(`✅ ×${qte} · aussi sur ${lieux}`, 'green');
+      toast(`✅ Aussi sur ${lieux}`, 'green');
     } else {
-      toast(`${nomProd.substring(0, 32)} ×${qte}`, 'green');
+      toast(nomProd.substring(0, 38), 'green');
     }
     $('cam-status').textContent = 'Cherche un code-barres…';
   } finally {
