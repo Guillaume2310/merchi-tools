@@ -917,6 +917,14 @@ async function lookupEAN(ean){
 // ════════════════════════════════════════
 // AJOUT PRODUIT
 // ════════════════════════════════════════
+// Demande la quantité directement au scan (défaut 1 ; annuler/vide = 1)
+function askQte(label){
+  const v = prompt(`Combien d'unités de "${(label||'').substring(0,40)}" ?`, '1');
+  if(v === null) return 1;
+  const n = parseInt(v, 10);
+  return (isNaN(n) || n < 1) ? 1 : n;
+}
+
 async function onEanDetected(ean){
   const k = baseKey();
 
@@ -948,13 +956,16 @@ async function onEanDetected(ean){
     info = await lookupEAN(ean);
   }
 
+  const nomProd = info.nom || `Produit ${ean}`;
+  const qte = askQte(nomProd);                 // demande le nombre directement
+  lastEan = ean; lastEanTime = Date.now();     // recale le délai anti-rescan après la saisie
   scanned.push({
     ean,
-    nom: info.nom || `Produit ${ean}`,
+    nom: nomProd,
     marque: info.marque || '',
     source: info.source,
     key: k, plateau: M.plateauActif,
-    qte: 1,
+    qte,
   });
   refreshCount();
   $('cam-count').textContent = countCurrent();
@@ -962,9 +973,9 @@ async function onEanDetected(ean){
   if(isMultiPlacement){
     // Affiche où le produit est déjà placé
     const lieux = autresPlacements.map(p => `${p.key} P${p.plateau}`).join(', ');
-    toast(`✅ Aussi sur ${lieux}`, 'green');
+    toast(`✅ ×${qte} · aussi sur ${lieux}`, 'green');
   } else {
-    toast((info.nom || `EAN ${ean}`).substring(0, 38), 'green');
+    toast(`${nomProd.substring(0, 32)} ×${qte}`, 'green');
   }
   $('cam-status').textContent = 'Cherche un code-barres…';
 }
