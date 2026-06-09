@@ -762,6 +762,7 @@ async function startCamera(){
       config,
       // Callback succès
       (decodedText, decodedResult) => {
+        if(scanBusy) return;            // un scan est déjà en cours → on ignore cette détection
         const ean = decodedText;
         const now = Date.now();
         if(ean !== lastEan || now - lastEanTime > 2500){
@@ -925,59 +926,64 @@ function askQte(label){
   return (isNaN(n) || n < 1) ? 1 : n;
 }
 
-async function onEanDetected(ean){
-  const k = baseKey();
+let scanBusy = false; // verrou : empêche de traiter 2 détections en même temps
 
-  // Doublon EXACT : même produit + même meuble + même plateau → on incrémente la quantité
-  const dupExact = scanned.find(p => p.ean===ean && p.key===k && p.plateau===M.plateauActif);
-  if(dupExact){
-    dupExact.qte = (dupExact.qte||1) + 1;
-    beep(); vibrate(60);
+async function onEanDetected(ean){
+  if(scanBusy) return;            // un scan est déjà en cours de traitement → on ignore
+  scanBusy = true;
+  try{
+    const k = baseKey();
+
+    // Déjà scanné sur CE plateau → on NE recompte PAS tout seul.
+    // La quantité se règle à la saisie au scan, ou via +/− dans la liste 📋.
+    const dupExact = scanned.find(p => p.ean===ean && p.key===k && p.plateau===M.plateauActif);
+    if(dupExact){
+      lastEan = ean; lastEanTime = Date.now();   // bloque un re-déclenchement immédiat
+      vibrate(150);
+      toast(`Déjà scanné ici (×${dupExact.qte||1}) — modifie dans 📋`, 'red');
+      $('cam-status').textContent = 'Cherche un code-barres…';
+      return;
+    }
+
+    // Multi-placement : même EAN sur un AUTRE plateau/meuble → autorisé
+    const autresPlacements = scanned.filter(p => p.ean===ean);
+    const isMultiPlacement = autresPlacements.length > 0;
+
+    $('cam-status').textContent = `EAN ${ean}…`;
+
+    // Si on a déjà ce produit ailleurs → réutilise les infos (pas besoin de rappeler l'API)
+    let info;
+    if(isMultiPlacement){
+      info = {nom: autresPlacements[0].nom, marque: autresPlacements[0].marque, source: autresPlacements[0].source};
+    } else {
+      info = await lookupEAN(ean);
+    }
+
+    const nomProd = info.nom || `Produit ${ean}`;
+    const qte = askQte(nomProd);                 // demande le nombre directement
+    lastEan = ean; lastEanTime = Date.now();     // recale le délai anti-rescan après la saisie
+    beep(); vibrate([40, 30, 40]);               // feedback APRÈS confirmation de la quantité
+    scanned.push({
+      ean,
+      nom: nomProd,
+      marque: info.marque || '',
+      source: info.source,
+      key: k, plateau: M.plateauActif,
+      qte,
+    });
     refreshCount();
     $('cam-count').textContent = countCurrent();
-    toast(`✓ ${(dupExact.nom||'EAN '+ean).substring(0,26)} ×${dupExact.qte}`, 'green');
+
+    if(isMultiPlacement){
+      const lieux = autresPlacements.map(p => `${p.key} P${p.plateau}`).join(', ');
+      toast(`✅ ×${qte} · aussi sur ${lieux}`, 'green');
+    } else {
+      toast(`${nomProd.substring(0, 32)} ×${qte}`, 'green');
+    }
     $('cam-status').textContent = 'Cherche un code-barres…';
-    return;
+  } finally {
+    scanBusy = false;
   }
-
-  // Multi-placement : même EAN ailleurs (autre meuble OU autre plateau) → on l'autorise + alerte
-  const autresPlacements = scanned.filter(p => p.ean===ean);
-  const isMultiPlacement = autresPlacements.length > 0;
-
-  vibrate([40, 30, 40]);
-  beep();
-  $('cam-status').textContent = `EAN ${ean}…`;
-
-  // Si on a déjà ce produit ailleurs → réutilise les infos déjà trouvées (pas besoin de rappeler l'API)
-  let info;
-  if(isMultiPlacement){
-    info = {nom: autresPlacements[0].nom, marque: autresPlacements[0].marque, source: autresPlacements[0].source};
-  } else {
-    info = await lookupEAN(ean);
-  }
-
-  const nomProd = info.nom || `Produit ${ean}`;
-  const qte = askQte(nomProd);                 // demande le nombre directement
-  lastEan = ean; lastEanTime = Date.now();     // recale le délai anti-rescan après la saisie
-  scanned.push({
-    ean,
-    nom: nomProd,
-    marque: info.marque || '',
-    source: info.source,
-    key: k, plateau: M.plateauActif,
-    qte,
-  });
-  refreshCount();
-  $('cam-count').textContent = countCurrent();
-
-  if(isMultiPlacement){
-    // Affiche où le produit est déjà placé
-    const lieux = autresPlacements.map(p => `${p.key} P${p.plateau}`).join(', ');
-    toast(`✅ ×${qte} · aussi sur ${lieux}`, 'green');
-  } else {
-    toast(`${nomProd.substring(0, 32)} ×${qte}`, 'green');
-  }
-  $('cam-status').textContent = 'Cherche un code-barres…';
 }
 
 function refreshCount(){
