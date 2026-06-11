@@ -1,9 +1,11 @@
 /* Service worker Merchi Scan — mode hors-ligne (app installable PWA) */
-const CACHE = 'merchi-scan-v1';
+const CACHE = 'merchi-scan-v2';
 const ASSETS = [
   './testscan.html',
+  './pharma.html',
   './lib/html5-qrcode.min.js',
   './manifest.webmanifest',
+  './pharma.webmanifest',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
