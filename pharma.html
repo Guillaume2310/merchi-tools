@@ -377,11 +377,12 @@ input:focus{outline:none;border-color:var(--teal)}
     </div>
     <div class="list-body" id="list-body"></div>
     <div style="padding:12px 14px;background:#fff;border-top:1px solid #eee">
-      <div style="display:flex;gap:8px">
+      <button class="btn btn-green" style="width:100%;font-size:15px;padding:14px" onclick="sendMailDirect()">📧 Envoyer par mail à mon consultant</button>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn" style="background:#fff;color:var(--teal);border:1.5px solid var(--teal)" onclick="shareFile()">📎 Envoyer le fichier</button>
         <button class="btn" style="background:#fce4ec;color:#c62828" onclick="clearAll()">🗑 Effacer</button>
-        <button class="btn btn-green" onclick="sendToConsultant()">📤 Envoyer à mon consultant</button>
       </div>
-      <button class="btn" style="margin-top:8px;width:100%;background:#fff;color:var(--teal);border:1.5px solid var(--teal)" onclick="newOfficine()">🆕 Nouvelle officine (tout remettre à zéro)</button>
+      <button class="btn" style="margin-top:8px;width:100%;background:#fff;color:#888;border:1px solid #ddd;font-size:13px" onclick="newOfficine()">🆕 Nouvelle officine (tout remettre à zéro)</button>
     </div>
   </div>
 </div>
@@ -1178,33 +1179,51 @@ function buildScanPayload(){
   return { data, json: JSON.stringify(data, null, 2), filename: `scan_${slug}_${dt}.json` };
 }
 
-async function sendToConsultant(){
+// Corps de mail lisible ET exploitable : EAN ×qté + nom, groupés par meuble/plateau
+function buildMailBody(){
+  const { data } = buildScanPayload();
+  const L = [];
+  L.push(`Officine : ${officineName||'—'}`);
+  L.push(`Date : ${data.date_scan}`);
+  L.push(`${data.nb_references} références · ${data.nb_unites} unités`);
+  L.push('');
+  data.meubles.forEach(m => {
+    m.plateaux.forEach(pl => {
+      L.push(`[${m.meuble} / Plateau ${pl.numero}]`);
+      pl.produits.forEach(p => L.push(`${p.ean} ×${p.quantite}  ${p.nom||''}`.trim()));
+      L.push('');
+    });
+  });
+  return L.join('\n');
+}
+
+// PRIMAIRE — ouvre le mail DIRECTEMENT, adressé au consultant, données dans le corps
+function sendMailDirect(){
+  if(scanned.length === 0){ toast('Rien à envoyer', 'red'); return; }
+  const { data } = buildScanPayload();
+  if(scanned.length > 60 && !confirm("Beaucoup de produits : le mail risque d'être coupé par iPhone.\nPour un gros scan, utilise plutôt « Envoyer le fichier ».\n\nOuvrir le mail quand même ?")) return;
+  const sujet = `Scan Merchi — ${officineName||'officine'} (${data.nb_unites} unités)`;
+  location.href = `mailto:${CONSULTANT_EMAIL}?subject=${encodeURIComponent(sujet)}&body=${encodeURIComponent(buildMailBody())}`;
+}
+
+// SECONDAIRE — partage le fichier JSON propre (menu de partage → Mail, WhatsApp…)
+async function shareFile(){
   if(scanned.length === 0){ toast('Rien à envoyer', 'red'); return; }
   const { json, filename, data } = buildScanPayload();
   const sujet = `Scan Merchi — ${officineName||'officine'} (${data.nb_unites} unités)`;
-  const texte = `Scan ${officineName||''} du ${data.date_scan}\n${data.nb_references} références · ${data.nb_unites} unités.`;
-
-  // 1) Partage natif AVEC le fichier (iOS/Android) → Mail, WhatsApp, etc.
   try{
     const file = new File([json], filename, {type:'application/json'});
     if(navigator.canShare && navigator.canShare({files:[file]})){
-      await navigator.share({files:[file], title:sujet, text:texte});
-      toast('📤 Envoyé', 'green');
+      await navigator.share({files:[file], title:sujet, text:`Scan ${officineName||''} — ${data.nb_references} réf. · ${data.nb_unites} unités`});
+      toast('📤 Partagé', 'green');
       return;
     }
-  }catch(e){
-    if(e && e.name === 'AbortError') return; // l'utilisateur a annulé le partage
-  }
-
-  // 2) Repli : on télécharge le fichier puis on ouvre le mail pré-rempli
+  }catch(e){ if(e && e.name === 'AbortError') return; }
   try{
     const url = URL.createObjectURL(new Blob([json], {type:'application/json'}));
-    const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
-    URL.revokeObjectURL(url);
-  }catch(e){}
-  const corps = `${texte}\n\nMerci de joindre le fichier "${filename}" qui vient d'être téléchargé sur le téléphone.`;
-  location.href = `mailto:${CONSULTANT_EMAIL}?subject=${encodeURIComponent(sujet)}&body=${encodeURIComponent(corps)}`;
-  toast('Fichier téléchargé — joins-le au mail', 'green');
+    const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
+    toast('Fichier téléchargé', 'green');
+  }catch(e){ toast('Partage non supporté sur ce navigateur', 'red'); }
 }
 
 // ════════════════════════════════════════
