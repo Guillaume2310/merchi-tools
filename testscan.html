@@ -109,9 +109,10 @@ input:focus{outline:none;border-color:var(--teal)}
 .cam-info{flex:1;font-size:13px;font-weight:600}
 .cam-info-sub{font-size:11px;opacity:.7}
 .cam-video-wrap{flex:1;position:relative;overflow:hidden;background:#000}
-#video{width:100%;height:100%;object-fit:cover}
-.cam-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:35%;border:3px solid var(--gold);border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.45);pointer-events:none}
-.cam-line{position:absolute;left:50%;transform:translateX(-50%);width:75%;height:2.5px;background:var(--gold);box-shadow:0 0 8px var(--gold);animation:scan 2s linear infinite;pointer-events:none}
+#cam-video-wrap{position:absolute;inset:0;width:100%;height:100%}
+#cam-video-wrap video{width:100%!important;height:100%!important;object-fit:cover!important}
+.cam-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:95%;max-width:480px;height:45%;max-height:200px;border:3px solid var(--gold);border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.4);pointer-events:none}
+.cam-line{position:absolute;left:50%;transform:translateX(-50%);width:88%;max-width:440px;height:2.5px;background:var(--gold);box-shadow:0 0 12px var(--gold);animation:scan 1.6s linear infinite;pointer-events:none}
 @keyframes scan{0%{top:35%}50%{top:60%}100%{top:35%}}
 .cam-status{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:#fff;font-size:13px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.9)}
 .cam-bot{background:rgba(0,0,0,.7);padding:14px 16px;display:flex;gap:8px;align-items:center}
@@ -264,8 +265,8 @@ input:focus{outline:none;border-color:var(--teal)}
       <div class="cam-info-sub" id="cam-info-sub">Pointe sur le code-barres</div>
     </div>
   </div>
-  <div class="cam-video-wrap" id="cam-video-wrap">
-    <video id="video" autoplay playsinline muted></video>
+  <div class="cam-video-wrap">
+    <div id="cam-video-wrap"></div>
     <div class="cam-frame"></div>
     <div class="cam-line"></div>
     <div class="cam-status" id="cam-status">Cherche un code-barres…</div>
