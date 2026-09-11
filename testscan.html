@@ -2,80 +2,46 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Merchi">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#2E6B7A">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Merchi — Scan</title>
+<meta name="theme-color" content="#2E6B7A">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" href="./icons/favicon-64.png">
-<script src="./lib/html5-qrcode.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{
-  --teal:#2E6B7A;--gold:#E8A838;--bg:#f5f4f0;--green:#2e7d32;--red:#D32F2F;--border:#d8d4cc;
-  --top-h:48px;
-  --bot-h:108px;
-  --safe-top:env(safe-area-inset-top, 0px);
-  --safe-bot:env(safe-area-inset-bottom, 0px);
-}
-html{height:100%}
-body{font-family:system-ui,Arial,sans-serif;background:#1a1a1a;color:#fff;font-size:15px;min-height:100vh;min-height:100dvh}
+:root{--teal:#2E6B7A;--gold:#E8A838;--bg:#f5f4f0;--green:#2e7d32;--red:#D32F2F;--border:#d8d4cc}
+body{font-family:system-ui,Arial,sans-serif;background:#1a1a1a;color:#fff;font-size:15px;height:100vh;overflow:hidden}
 
-/* ─── APP SHELL : top fixé, bottom fixé, scroll au milieu ─── */
-.top-bar{
-  position:fixed;top:0;left:0;right:0;z-index:50;
-  background:var(--teal);
-  padding:calc(10px + var(--safe-top)) 14px 10px;
-  display:flex;align-items:center;gap:10px;
-  height:calc(var(--top-h) + var(--safe-top));
-}
+/* ─── BARRE HAUT ─── */
+.top-bar{background:var(--teal);padding:10px 14px;display:flex;align-items:center;gap:10px;height:48px;flex-shrink:0}
 .logo{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--gold);flex-shrink:0}
 .label{font-size:14px;font-weight:700;color:#fff;flex:1;text-align:center}
 .label-sub{font-size:10px;color:rgba(255,255,255,.65);font-weight:400}
 .count-badge{background:rgba(0,0,0,.25);padding:5px 10px;border-radius:14px;font-size:13px;font-weight:700;flex-shrink:0;display:flex;align-items:center;gap:5px;cursor:pointer}
 .count-badge:active{filter:brightness(.8)}
 
-/* ─── ZONE VISUEL MEUBLE (entre les 2 barres) ─── */
-.visual-area{
-  position:fixed;
-  top:calc(var(--top-h) + var(--safe-top));
-  bottom:calc(var(--bot-h) + var(--safe-bot));
-  left:0;right:0;
-  background:#2a2a2a;
-  overflow-y:auto;-webkit-overflow-scrolling:touch;
-  display:flex;flex-direction:column;align-items:center;
-  padding:18px 14px;
-}
-.visual-area::-webkit-scrollbar{width:6px}
-.visual-area::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:3px}
-.visual-meuble{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:340px}
+/* ─── ZONE VISUEL MEUBLE ─── */
+.visual-area{flex:1;background:#2a2a2a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 14px;overflow:auto;position:relative}
+.visual-meuble{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px}
 .meuble-title{font-size:13px;font-weight:700;color:var(--gold);letter-spacing:1px}
 .meuble-dims{font-size:11px;color:rgba(255,255,255,.5);margin-top:-10px;font-family:monospace}
 .meuble-empty{color:rgba(255,255,255,.4);text-align:center;padding:60px 20px;font-size:14px;line-height:1.7}
 .meuble-empty-arrow{font-size:32px;margin-bottom:10px}
 
 /* Représentation visuelle */
-.shelf-stack{display:flex;flex-direction:column;border:3px solid #555;border-radius:8px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.5);background:#3a3a3a;width:100%}
-.shelf-row{padding:9px 11px;border-bottom:2px solid #555;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;transition:.15s;min-height:42px}
+.shelf-stack{display:flex;flex-direction:column;border:3px solid #555;border-radius:8px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.5);background:#3a3a3a}
+.shelf-row{padding:14px 12px;border-bottom:2px solid #555;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;transition:.15s;min-height:50px}
 .shelf-row:last-child{border-bottom:none}
 .shelf-row:active{filter:brightness(1.2)}
 .shelf-row.active{background:var(--gold);color:#1a1a1a}
 .shelf-row.active .shelf-num{background:#1a1a1a;color:var(--gold)}
-.shelf-num{background:rgba(255,255,255,.15);color:#fff;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
-.shelf-info{flex:1;text-align:left;min-width:0}
-.shelf-label{font-size:12px;font-weight:600}
-.shelf-count{font-size:9.5px;opacity:.6;font-family:monospace;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.shelf-zone{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.15);flex-shrink:0}
-
-/* Plus de plateaux = lignes encore plus compactes */
-.shelf-stack.compact .shelf-row{padding:6px 10px;min-height:34px}
-.shelf-stack.compact .shelf-num{width:22px;height:22px;font-size:11px}
-.shelf-stack.compact .shelf-label{font-size:11.5px}
-.shelf-stack.compact .shelf-count{font-size:9px}
+.shelf-num{background:rgba(255,255,255,.15);color:#fff;font-weight:700;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.shelf-info{flex:1;text-align:left}
+.shelf-label{font-size:13px;font-weight:600}
+.shelf-count{font-size:10px;opacity:.6;font-family:monospace;margin-top:2px}
+.shelf-zone{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.15)}
 
 /* Gondole 2 faces */
 .gondole-wrap{display:flex;gap:14px;align-items:flex-start}
@@ -87,13 +53,7 @@ body{font-family:system-ui,Arial,sans-serif;background:#1a1a1a;color:#fff;font-s
 .shelf-simple.active{border-color:var(--gold);background:rgba(232,168,56,.15)}
 
 /* ─── BARRE BAS ─── */
-.bot-bar{
-  position:fixed;bottom:0;left:0;right:0;z-index:50;
-  background:#1a1a1a;border-top:1px solid #444;
-  padding:12px 12px calc(12px + var(--safe-bot));
-  display:flex;align-items:center;gap:8px;
-  height:calc(var(--bot-h) + var(--safe-bot));
-}
+.bot-bar{background:#1a1a1a;border-top:1px solid #444;padding:14px 12px 22px;display:flex;align-items:center;gap:8px;height:120px;flex-shrink:0}
 .bot-btn{flex:1;background:#2e2e2e;border:none;color:#fff;border-radius:14px;padding:12px 10px;font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:.15s}
 .bot-btn:active{filter:brightness(1.3)}
 .bot-btn-icon{font-size:24px;line-height:1}
@@ -149,25 +109,11 @@ input:focus{outline:none;border-color:var(--teal)}
 .cam-info{flex:1;font-size:13px;font-weight:600}
 .cam-info-sub{font-size:11px;opacity:.7}
 .cam-video-wrap{flex:1;position:relative;overflow:hidden;background:#000}
-.cam-video-wrap video{width:100%!important;height:100%!important;object-fit:cover!important}
-#cam-video-wrap{width:100%;height:100%}
-.cam-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:95%;max-width:480px;height:45%;max-height:200px;border:3px solid var(--gold);border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.4);pointer-events:none}
-.cam-line{position:absolute;left:50%;transform:translateX(-50%);width:88%;max-width:440px;height:2.5px;background:var(--gold);box-shadow:0 0 12px var(--gold);animation:scan 1.6s linear infinite;pointer-events:none}
-@keyframes scan{0%{top:30%}50%{top:65%}100%{top:30%}}
+#video{width:100%;height:100%;object-fit:cover}
+.cam-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:35%;border:3px solid var(--gold);border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.45);pointer-events:none}
+.cam-line{position:absolute;left:50%;transform:translateX(-50%);width:75%;height:2.5px;background:var(--gold);box-shadow:0 0 8px var(--gold);animation:scan 2s linear infinite;pointer-events:none}
+@keyframes scan{0%{top:35%}50%{top:60%}100%{top:35%}}
 .cam-status{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:#fff;font-size:13px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.9)}
-/* Outils caméra (torche + zoom) en overlay */
-.cam-tools{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;gap:8px;z-index:10}
-.cam-tool-btn{width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.55);border:1.5px solid rgba(255,255,255,.3);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.cam-tool-btn:active{transform:scale(.92)}
-.cam-tool-btn.active{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
-.cam-zoom{display:flex;flex-direction:column;align-items:center;gap:4px;background:rgba(0,0,0,.55);border-radius:22px;padding:4px;backdrop-filter:blur(8px)}
-.cam-zoom .cam-tool-btn{width:36px;height:36px;font-size:20px;background:transparent;border:none}
-.zoom-val{color:#fff;font-size:11px;font-weight:700}
-
-/* Animation focus tap */
-.focus-ring{position:absolute;width:60px;height:60px;border:2px solid var(--gold);border-radius:50%;pointer-events:none;animation:focusPulse .6s ease-out forwards;z-index:5}
-@keyframes focusPulse{0%{transform:translate(-50%,-50%) scale(1.5);opacity:0}40%{opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
-
 .cam-bot{background:rgba(0,0,0,.7);padding:14px 16px;display:flex;gap:8px;align-items:center}
 .cam-bot-info{flex:1;color:#fff}
 .cam-bot-count{font-size:24px;font-weight:700;color:var(--gold)}
@@ -187,10 +133,6 @@ input:focus{outline:none;border-color:var(--teal)}
 .list-nom{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#333}
 .list-ean{font-family:monospace;font-size:10px;color:#aaa}
 .list-del{background:none;border:none;font-size:20px;color:#ccc;cursor:pointer;padding:0 6px}
-.qte-ctrl{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.qte-btn{width:28px;height:28px;border-radius:8px;border:1.5px solid var(--teal);background:#fff;color:var(--teal);font-size:18px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.qte-btn:active{background:var(--teal);color:#fff}
-.qte-val{min-width:26px;text-align:center;font-weight:700;font-size:15px;cursor:pointer;text-decoration:underline;text-decoration-style:dotted}
 .list-del:active{color:var(--red)}
 
 /* ─── TOAST ─── */
@@ -219,7 +161,7 @@ input:focus{outline:none;border-color:var(--teal)}
   <div class="welcome-sub">
     Choisis le type de meuble, ses dimensions, puis tape sur le plateau et scanne les produits.
   </div>
-  <button class="welcome-btn" onclick="initAudio();hide('welcome');openType()">▶ Commencer</button>
+  <button class="welcome-btn" onclick="hide('welcome');openType()">▶ Commencer</button>
   <button class="welcome-btn-sec" onclick="document.getElementById('file-base').click()">📦 Charger ma base produits</button>
   <div class="welcome-base-status" id="base-status">Aucune base locale — recherche via APIs en ligne</div>
   <input type="file" id="file-base" accept=".json,application/json" style="display:none" onchange="loadBase(this)">
@@ -322,20 +264,11 @@ input:focus{outline:none;border-color:var(--teal)}
       <div class="cam-info-sub" id="cam-info-sub">Pointe sur le code-barres</div>
     </div>
   </div>
-  <div class="cam-video-wrap">
-    <div id="cam-video-wrap" style="position:absolute;inset:0" onclick="tapToFocus(event)"></div>
+  <div class="cam-video-wrap" id="cam-video-wrap">
+    <video id="video" autoplay playsinline muted></video>
     <div class="cam-frame"></div>
     <div class="cam-line"></div>
     <div class="cam-status" id="cam-status">Cherche un code-barres…</div>
-    <!-- Outils caméra : torche + zoom -->
-    <div class="cam-tools">
-      <button class="cam-tool-btn" id="btn-torch" onclick="toggleTorch()" title="Lampe torche">🔦</button>
-      <div class="cam-zoom" id="cam-zoom" style="display:none">
-        <button class="cam-tool-btn" onclick="adjustZoom(-1)">−</button>
-        <span class="zoom-val" id="zoom-val">1×</span>
-        <button class="cam-tool-btn" onclick="adjustZoom(1)">+</button>
-      </div>
-    </div>
   </div>
   <div class="cam-bot">
     <div class="cam-bot-info">
@@ -361,6 +294,33 @@ input:focus{outline:none;border-color:var(--teal)}
   </div>
 </div>
 
+<!-- ─── MODAL VALIDATION PRODUIT ─── -->
+<div class="modal-bg" id="modal-product">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Valider le produit</div>
+    <div class="modal-sub" id="product-confirmation">EAN détecté</div>
+    <div style="background:#f7f5f0;border-radius:9px;padding:10px 12px;margin-bottom:14px;color:#333">
+      <div id="product-confirm-name" style="font-weight:700"></div>
+      <div id="product-confirm-ean" style="font-family:monospace;font-size:11px;color:#888;margin-top:3px"></div>
+    </div>
+    <div class="dims-grid">
+      <div>
+        <div class="id-lbl">Prix vente TTC (€)</div>
+        <input type="number" id="inp-prix-vente" min="0" step="0.01" inputmode="decimal" placeholder="12,90">
+      </div>
+      <div>
+        <div class="id-lbl">Facings</div>
+        <input type="number" id="inp-facings" min="1" step="1" inputmode="numeric" value="1">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-gray" onclick="cancelProduct()">Annuler</button>
+      <button class="btn btn-teal" onclick="confirmProduct()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── MODAL LISTE ─── -->
 <div class="modal-bg" id="modal-list">
   <div class="modal list-modal">
@@ -375,12 +335,10 @@ input:focus{outline:none;border-color:var(--teal)}
       </div>
     </div>
     <div class="list-body" id="list-body"></div>
-    <div style="padding:12px 14px;background:#fff;border-top:1px solid #eee">
-      <div style="display:flex;gap:8px">
-        <button class="btn" style="background:#fce4ec;color:#c62828" onclick="clearAll()">🗑 Effacer</button>
-        <button class="btn btn-green" onclick="exportData()">📤 Exporter</button>
-      </div>
-      <button class="btn" style="margin-top:8px;width:100%;background:#fff;color:var(--teal);border:1.5px solid var(--teal)" onclick="newOfficine()">🆕 Nouvelle officine (tout remettre à zéro)</button>
+    <div style="padding:12px 14px;background:#fff;display:flex;gap:8px;border-top:1px solid #eee">
+      <button class="btn" style="background:#fce4ec;color:#c62828" onclick="clearAll()">🗑 Effacer</button>
+      <button class="btn btn-outline" onclick="saveSessionManually()">💾 Sauver</button>
+      <button class="btn btn-green" onclick="exportData()">📤 Exporter</button>
     </div>
   </div>
 </div>
@@ -427,66 +385,18 @@ let M = {            // meuble courant
   face: 'A',          // pour gondole
   plateauActif: null,
 };
-let scanned = [];     // [{ean, nom, marque, source, key}] où key = "M01" ou "G01_FA"
-let qrScanner = null;
+let scanned = [];     // [{ean, nom, marque, source, prix_vente_ttc, nb_facings, key}]
+let pendingProduct = null;
+let processingEan = false;
+let zxingReader = null;
 let lastEan = null, lastEanTime = 0;
-let scanBusy = false;  // verrou : empêche de traiter 2 détections caméra en même temps
 let PROD_BASE = {};   // base locale produits_reference.json (chargée par l'utilisateur, persistée en localStorage)
 const BASE_KEY = 'merchi_scan_base_v1';
-const SESSION_KEY = 'merchi_scan_session_v1'; // sauvegarde auto des produits scannés (résiste au refresh)
-
-// Total d'unités (somme des quantités) sur un sous-ensemble de scanned
-function unitsOf(arr){ return arr.reduce((s,p)=>s+(p.qte||1),0); }
-function totalUnits(){ return unitsOf(scanned); }
+const SESSION_KEY = 'merchi_scan_session_v2';
 
 function $(id){return document.getElementById(id);}
 function hide(id){$(id).style.display='none';}
 function vibrate(p){if(navigator.vibrate)navigator.vibrate(p);}
-
-// Bip sonore — feedback instantané au scan (compatible iOS)
-let _audioCtx = null;
-function initAudio(){
-  // Doit être appelé suite à une interaction utilisateur (click) sur iOS
-  if(_audioCtx) return;
-  try{
-    _audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-    if(_audioCtx.state === 'suspended') _audioCtx.resume();
-  }catch(e){}
-}
-function beep(){
-  if(!_audioCtx) initAudio();
-  if(!_audioCtx) return;
-  if(_audioCtx.state === 'suspended') _audioCtx.resume();
-  try{
-    const t = _audioCtx.currentTime;
-    // 2 notes courtes (ding-ding) façon caisse de magasin
-    const playNote = (freq, start, dur) => {
-      const osc = _audioCtx.createOscillator(), gain = _audioCtx.createGain();
-      osc.frequency.value = freq; osc.type = 'square';
-      gain.gain.setValueAtTime(0.0001, t+start);
-      gain.gain.exponentialRampToValueAtTime(0.45, t+start+0.005);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t+start+dur);
-      osc.connect(gain); gain.connect(_audioCtx.destination);
-      osc.start(t+start); osc.stop(t+start+dur);
-    };
-    playNote(1318, 0,    0.07);  // Mi aigu
-    playNote(1760, 0.07, 0.10);  // La très aigu
-  }catch(e){}
-}
-function beepError(){
-  if(!_audioCtx) initAudio();
-  if(!_audioCtx) return;
-  try{
-    const t = _audioCtx.currentTime;
-    const osc = _audioCtx.createOscillator(), gain = _audioCtx.createGain();
-    osc.frequency.value = 220; osc.type = 'square';
-    gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(0.3, t+0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t+0.2);
-    osc.connect(gain); gain.connect(_audioCtx.destination);
-    osc.start(); osc.stop(t+0.2);
-  }catch(e){}
-}
 
 function toast(msg, type=''){
   const t = $('toast');
@@ -535,10 +445,9 @@ function confirmType(){
   }
   $('btn-type-val').textContent = M.type + M.num;
   $('btn-dims').disabled = false;
-  // Auto-sélectionne plateau 1 → permet de scanner immédiatement
-  M.plateauActif = '1';
   refreshLabel();
   refreshVisual();
+  saveSession();
 
   if(!M.np && TYPES.find(t=>t.code===M.type)?.plateaux){
     setTimeout(openDims, 250);
@@ -566,18 +475,15 @@ function confirmDims(){
   M.l = parseInt($('inp-l').value) || 0;
   M.np = parseInt($('inp-np').value) || 0;
   $('btn-dims-val').textContent = `${M.h}×${M.l}`;
-  // Auto-sélectionne plateau 1 si pas encore actif
-  if(!M.plateauActif) M.plateauActif = '1';
   closeModal('modal-dims');
   refreshVisual();
-  refreshScanBtn();
+  saveSession();
 }
 
 // ════════════════════════════════════════
 // VISUEL MEUBLE
 // ════════════════════════════════════════
 function refreshLabel(){
-  persistSession();
   if(!M.type){
     $('meuble-label').textContent = '— Aucun meuble —';
     $('plateau-label').textContent = 'Tape un plateau';
@@ -600,7 +506,7 @@ function refreshVisual(){
   // Pas de plateaux (BV, TA) → bloc simple
   if(!t.plateaux){
     const k = `${M.type}${M.num}`;
-    const cnt = unitsOf(scanned.filter(p=>p.key===k));
+    const cnt = scanned.filter(p=>p.key===k).length;
     area.innerHTML = `<div class="visual-meuble">
       <div class="meuble-title">${M.type}${M.num} — ${t.label.toUpperCase()}</div>
       <div class="shelf-simple ${M.plateauActif==='1'?'active':''}" onclick="selectPlateau('1')">
@@ -651,7 +557,7 @@ function renderShelves(host){
   const rows = [];
   // Numérotation : top → bot avec plateau N en haut
   for(let n = M.np; n >= 1; n--){
-    const cnt = unitsOf(scanned.filter(p => p.key===k && p.plateau===String(n)));
+    const cnt = scanned.filter(p => p.key===k && p.plateau===String(n)).length;
     const isActive = M.plateauActif === String(n);
     const zone = zoneRetail(n, M.np);
     rows.push(`<div class="shelf-row ${isActive?'active':''}" onclick="selectPlateau('${n}')">
@@ -663,8 +569,7 @@ function renderShelves(host){
       <div class="shelf-zone" style="background:${zone.color}33;color:${zone.color}">${zone.label}</div>
     </div>`);
   }
-  const compact = M.np >= 6 ? ' compact' : '';
-  host.innerHTML = `<div class="shelf-stack${compact}">${rows.join('')}</div>`;
+  host.innerHTML = `<div class="shelf-stack">${rows.join('')}</div>`;
 }
 
 function zoneRetail(n, total){
@@ -708,7 +613,6 @@ function refreshScanBtn(){
 // ════════════════════════════════════════
 function openCamera(){
   if(!M.type || !M.plateauActif){toast('Choisis un plateau', 'red'); return;}
-  initAudio(); // débloque l'audio (iOS) suite au tap utilisateur
   $('cam-info').textContent = `${baseKey()} · Plateau ${M.plateauActif}`;
   $('cam-info-sub').textContent = `${countCurrent()} déjà scannés`;
   $('cam-count').textContent = countCurrent();
@@ -723,171 +627,53 @@ function closeCamera(){
 }
 
 function countCurrent(){
-  return unitsOf(scanned.filter(p => p.key===baseKey() && p.plateau===M.plateauActif));
+  return scanned.filter(p => p.key===baseKey() && p.plateau===M.plateauActif).length;
 }
 
 async function startCamera(){
-  if(typeof Html5Qrcode === 'undefined'){
+  if(typeof ZXing === 'undefined'){
     $('cam-status').textContent = '⚠️ Librairie scan non chargée (vérifie ta connexion)';
     return;
   }
-  $('cam-status').textContent = '⏳ Démarrage caméra…';
   try{
-    // Le video element existant est remplacé par le conteneur du scanner
-    qrScanner = new Html5Qrcode('cam-video-wrap', {verbose: false});
-
-    const formats = [
-      Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
-      Html5QrcodeSupportedFormats.UPC_A,  Html5QrcodeSupportedFormats.UPC_E,
-      Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
-      Html5QrcodeSupportedFormats.CODE_93, Html5QrcodeSupportedFormats.ITF,
+    // Limiter aux formats parapharma : EAN_13 surtout, plus EAN_8 / UPC / Code128
+    const hints = new Map();
+    const fmts = [
+      ZXing.BarcodeFormat.EAN_13,
+      ZXing.BarcodeFormat.EAN_8,
+      ZXing.BarcodeFormat.UPC_A,
+      ZXing.BarcodeFormat.UPC_E,
+      ZXing.BarcodeFormat.CODE_128,
     ];
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, fmts);
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    zxingReader = new ZXing.BrowserMultiFormatReader(hints, 200);
 
-    const config = {
-      fps: 30,                     // Max possible — scan le plus réactif possible
-      // Zone de scan plus large + plus haute → couvre quasiment tout l'écran
-      qrbox: (vw, vh) => {
-        const w = Math.min(vw * 0.95, 480);
-        const h = Math.min(vh * 0.45, 200);
-        return {width: Math.round(w), height: Math.round(h)};
-      },
-      aspectRatio: undefined,
-      formatsToSupport: formats,
-      // Active BarcodeDetector natif si dispo (Chrome Android, iOS 17+) → 5-10× plus rapide
-      experimentalFeatures: {useBarCodeDetectorIfSupported: true},
-      // 1080p donne plus de détail sur les codes courbes (cylindres, flacons)
-      videoConstraints: {
-        facingMode: {ideal: 'environment'},
-        width: {ideal: 1920}, height: {ideal: 1080},
-        focusMode: 'continuous',
-        advanced: [{focusDistance: 0.2}], // pré-focus à ~20cm (distance scan habituelle)
-      },
-    };
-
-    await qrScanner.start(
-      {facingMode: {ideal: 'environment'}},
-      config,
-      // Callback succès
-      (decodedText, decodedResult) => {
-        if(scanBusy) return;            // un scan est déjà en cours → on ignore cette détection
-        const ean = decodedText;
-        const now = Date.now();
-        if(ean !== lastEan || now - lastEanTime > 2500){
-          lastEan = ean; lastEanTime = now;
-          onEanDetected(ean);
+    $('cam-status').textContent = 'Cherche un code-barres…';
+    await zxingReader.decodeFromConstraints(
+      {video: {facingMode: {ideal: 'environment'}, width:{ideal:1280}, height:{ideal:720}}},
+      'video',
+      (result, err) => {
+        if(result){
+          const ean = result.getText();
+          const now = Date.now();
+          if(ean !== lastEan || now - lastEanTime > 2500){
+            lastEan = ean; lastEanTime = now;
+            onEanDetected(ean);
+          }
         }
-      },
-      // Callback erreur (silencieux — appelé à chaque frame sans détection)
-      (errorMessage) => {}
+      }
     );
-
-    $('cam-status').textContent = '🔍 Pointe sur un code-barres';
-    // Initialise les contrôles caméra (zoom, torche dispo dynamiquement)
-    setTimeout(setupZoom, 600);
   }catch(err){
-    console.error('Erreur scan:', err);
-    $('cam-status').textContent = '🔒 ' + (err.message || 'Caméra refusée') + ' — utilise "⌨ Saisir"';
+    console.error(err);
+    $('cam-status').textContent = '🔒 Caméra refusée — utilise Saisir';
   }
 }
 
-async function stopCamera(){
-  if(qrScanner){
-    try{
-      if(qrScanner.isScanning) await qrScanner.stop();
-      qrScanner.clear();
-    }catch(e){}
-    qrScanner = null;
-  }
-  torchOn = false;
-  currentZoom = 1;
-  $('btn-torch')?.classList.remove('active');
-}
-
-// ─── Torche / Lampe ───
-let torchOn = false;
-async function toggleTorch(){
-  if(!qrScanner) return;
-  try{
-    const track = qrScanner.getRunningTrackCameraCapabilities ? null : null;
-    const stream = document.querySelector('#cam-video-wrap video')?.srcObject;
-    if(!stream) return;
-    const tracks = stream.getVideoTracks();
-    if(!tracks.length) return;
-    const cap = tracks[0].getCapabilities ? tracks[0].getCapabilities() : {};
-    if(!('torch' in cap)){toast('Lampe non supportée', 'red'); return;}
-    torchOn = !torchOn;
-    await tracks[0].applyConstraints({advanced: [{torch: torchOn}]});
-    $('btn-torch').classList.toggle('active', torchOn);
-  }catch(e){toast('Lampe non supportée', 'red');}
-}
-
-// ─── Zoom ───
-let currentZoom = 1, zoomMin = 1, zoomMax = 1, zoomStep = 1;
-function setupZoom(){
-  const stream = document.querySelector('#cam-video-wrap video')?.srcObject;
-  if(!stream) return;
-  const track = stream.getVideoTracks()[0];
-  if(!track || !track.getCapabilities) return;
-  const cap = track.getCapabilities();
-  if(cap.zoom){
-    zoomMin = cap.zoom.min || 1;
-    zoomMax = cap.zoom.max || 1;
-    zoomStep = cap.zoom.step || 0.5;
-    // Auto-zoom à 2x si possible → codes-barres petits beaucoup plus lisibles
-    const autoZoom = Math.min(2, zoomMax);
-    if(autoZoom > zoomMin){
-      currentZoom = autoZoom;
-      track.applyConstraints({advanced: [{zoom: currentZoom}]}).catch(()=>{});
-    } else {
-      currentZoom = track.getSettings().zoom || zoomMin;
-    }
-    if(zoomMax > zoomMin) $('cam-zoom').style.display = 'flex';
-    updateZoomLabel();
-  }
-}
-function adjustZoom(dir){
-  const stream = document.querySelector('#cam-video-wrap video')?.srcObject;
-  if(!stream) return;
-  const track = stream.getVideoTracks()[0];
-  currentZoom = Math.max(zoomMin, Math.min(zoomMax, currentZoom + dir * zoomStep));
-  track.applyConstraints({advanced: [{zoom: currentZoom}]}).catch(()=>{});
-  updateZoomLabel();
-}
-function updateZoomLabel(){
-  $('zoom-val').textContent = currentZoom.toFixed(1).replace(/\.0$/, '') + '×';
-}
-
-// ─── Tap-to-focus ───
-async function tapToFocus(ev){
-  const stream = document.querySelector('#cam-video-wrap video')?.srcObject;
-  if(!stream) return;
-  const track = stream.getVideoTracks()[0];
-  if(!track || !track.getCapabilities) return;
-  const cap = track.getCapabilities();
-
-  // Animation visuelle du tap
-  const wrap = $('cam-video-wrap').parentElement;
-  const rect = wrap.getBoundingClientRect();
-  const ring = document.createElement('div');
-  ring.className = 'focus-ring';
-  ring.style.left = (ev.clientX - rect.left) + 'px';
-  ring.style.top  = (ev.clientY - rect.top) + 'px';
-  wrap.appendChild(ring);
-  setTimeout(()=>ring.remove(), 700);
-
-  // Forcer la mise au point manuelle si supportée
-  if(cap.focusMode && cap.focusMode.includes('manual')){
-    try{
-      // Trick : passer en single-shot puis revenir en continuous force un nouveau focus
-      await track.applyConstraints({advanced: [{focusMode: 'single-shot'}]});
-      setTimeout(()=>track.applyConstraints({advanced: [{focusMode: 'continuous'}]}).catch(()=>{}), 500);
-    }catch(e){}
-  } else {
-    // Sur iOS : pas de focus manuel JS, mais on peut forcer un re-focus via reset
-    try{
-      const settings = track.getSettings();
-      await track.applyConstraints({advanced: [{focusDistance: settings.focusDistance}]});
-    }catch(e){}
+function stopCamera(){
+  if(zxingReader){
+    try{ zxingReader.reset(); }catch(e){}
+    zxingReader = null;
   }
 }
 
@@ -926,66 +712,104 @@ async function lookupEAN(ean){
 // AJOUT PRODUIT
 // ════════════════════════════════════════
 async function onEanDetected(ean){
-  if(scanBusy) return;            // un scan est déjà en cours de traitement → on ignore
-  scanBusy = true;
-  try{
-    const k = baseKey();
+  if(processingEan) return;
+  const k = baseKey();
+  const dup = scanned.find(p => p.ean===ean && p.key===k && p.plateau===M.plateauActif);
+  if(dup){toast('Déjà scanné ✓'); return;}
 
-    // Déjà scanné sur CE plateau → message rouge, on ne recompte pas (ajuste dans la liste).
-    const dupExact = scanned.find(p => p.ean===ean && p.key===k && p.plateau===M.plateauActif);
-    if(dupExact){
-      lastEan = ean; lastEanTime = Date.now();   // bloque un re-déclenchement immédiat
-      vibrate(150);
-      toast(`Déjà scanné ici (×${dupExact.qte||1}) — modifie dans 📋`, 'red');
-      $('cam-status').textContent = 'Cherche un code-barres…';
-      return;
-    }
+  processingEan = true;
+  vibrate(60);
+  $('cam-status').textContent = `EAN ${ean}…`;
+  toast(`📷 ${ean}`, 'green');
 
-    // Multi-placement : même EAN sur un AUTRE plateau/meuble → autorisé
-    const autresPlacements = scanned.filter(p => p.ean===ean);
-    const isMultiPlacement = autresPlacements.length > 0;
+  const info = await lookupEAN(ean);
+  pendingProduct = {
+    ean,
+    nom: info.nom || `Produit ${ean}`,
+    marque: info.marque || '',
+    source: info.source,
+    key: k, plateau: M.plateauActif,
+  };
+  $('product-confirm-name').textContent = pendingProduct.nom;
+  $('product-confirm-ean').textContent = `${ean}${pendingProduct.marque ? ` · ${pendingProduct.marque}` : ''}`;
+  $('product-confirmation').textContent = `${k} · Plateau ${M.plateauActif}`;
+  $('inp-prix-vente').value = '';
+  $('inp-facings').value = '1';
+  openModal('modal-product');
+  setTimeout(()=>$('inp-prix-vente').focus(), 200);
+}
 
-    vibrate([40, 30, 40]);
-    beep();
-    $('cam-status').textContent = `EAN ${ean}…`;
+function confirmProduct(){
+  if(!pendingProduct) return;
+  const prix = Number.parseFloat($('inp-prix-vente').value.replace(',', '.'));
+  const facings = Number.parseInt($('inp-facings').value, 10);
+  if(!Number.isFinite(prix) || prix < 0){toast('Saisis le prix de vente TTC', 'red'); return;}
+  if(!Number.isInteger(facings) || facings < 1){toast('Les facings doivent être au moins à 1', 'red'); return;}
+  scanned.push({...pendingProduct, prix_vente_ttc: Math.round(prix * 100) / 100, nb_facings: facings, source_prix: 'manuel'});
+  pendingProduct = null;
+  processingEan = false;
+  closeModal('modal-product');
+  saveSession();
+  refreshCount();
+  $('cam-count').textContent = countCurrent();
+  refreshVisual();
+  toast('Produit enregistré ✓', 'green');
+  $('cam-status').textContent = 'Cherche un code-barres…';
+}
 
-    // Si on a déjà ce produit ailleurs → réutilise les infos (pas besoin de rappeler l'API)
-    let info;
-    if(isMultiPlacement){
-      info = {nom: autresPlacements[0].nom, marque: autresPlacements[0].marque, source: autresPlacements[0].source};
-    } else {
-      info = await lookupEAN(ean);
-    }
-
-    const nomProd = info.nom || `Produit ${ean}`;
-    lastEan = ean; lastEanTime = Date.now();
-    // Ajout direct en quantité 1 — on ajuste ensuite dans la liste (−/+ ou tap sur le nombre).
-    scanned.push({
-      ean,
-      nom: nomProd,
-      marque: info.marque || '',
-      source: info.source,
-      key: k, plateau: M.plateauActif,
-      qte: 1,
-    });
-    refreshCount();
-    $('cam-count').textContent = countCurrent();
-
-    if(isMultiPlacement){
-      const lieux = autresPlacements.map(p => `${p.key} P${p.plateau}`).join(', ');
-      toast(`✅ Aussi sur ${lieux}`, 'green');
-    } else {
-      toast(nomProd.substring(0, 38), 'green');
-    }
-    $('cam-status').textContent = 'Cherche un code-barres…';
-  } finally {
-    scanBusy = false;
-  }
+function cancelProduct(){
+  pendingProduct = null;
+  processingEan = false;
+  closeModal('modal-product');
+  $('cam-status').textContent = 'Cherche un code-barres…';
 }
 
 function refreshCount(){
-  $('count-num').textContent = totalUnits();
-  persistSession();
+  $('count-num').textContent = scanned.length;
+}
+
+function saveSession(){
+  try{
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      version: 2,
+      saved_at: new Date().toISOString(),
+      meuble: M,
+      produits: scanned,
+    }));
+  }catch(err){
+    toast('⚠️ Sauvegarde locale impossible', 'red');
+  }
+}
+
+function saveSessionManually(){
+  saveSession();
+  toast('💾 Session sauvegardée sur le téléphone', 'green');
+}
+
+function restoreSession(){
+  try{
+    const raw = localStorage.getItem(SESSION_KEY);
+    if(!raw) return;
+    const session = JSON.parse(raw);
+    if(!Array.isArray(session.produits) || session.produits.length === 0) return;
+    const savedAt = session.saved_at ? new Date(session.saved_at).toLocaleString('fr-FR') : 'date inconnue';
+    const resume = confirm(`Une session non exportée a été trouvée (${session.produits.length} produits, ${savedAt}).\n\nRestaurer les données ?`);
+    if(!resume){
+      localStorage.removeItem(SESSION_KEY);
+      return;
+    }
+    scanned = session.produits;
+    if(session.meuble) M = {...M, ...session.meuble};
+    hide('welcome');
+    refreshCount();
+    refreshLabel();
+    refreshVisual();
+    $('btn-type-val').textContent = M.type ? M.type + M.num : '—';
+    $('btn-dims').disabled = !M.type;
+    toast(`✅ ${scanned.length} produits restaurés`, 'green');
+  }catch(err){
+    localStorage.removeItem(SESSION_KEY);
+  }
 }
 
 // ════════════════════════════════════════
@@ -1026,17 +850,12 @@ function showList(){
     });
     body.innerHTML = Object.values(groups).map(g => `
       <div class="list-group">
-        <div class="list-group-title">${g.key} · Plateau ${g.plateau} <span class="list-group-count">${unitsOf(g.items)}</span></div>
+        <div class="list-group-title">${g.key} · Plateau ${g.plateau} <span class="list-group-count">${g.items.length}</span></div>
         ${g.items.map(p => `<div class="list-item">
           <span class="list-tag">${p.source==='inconnu'?'?':p.source==='local'?'L':p.source==='OBF'?'B':p.source==='OFF'?'F':'M'}</span>
           <div class="list-info">
             <div class="list-nom">${p.nom}</div>
-            <div class="list-ean">${p.ean}${p.marque?' · '+p.marque:''}</div>
-          </div>
-          <div class="qte-ctrl">
-            <button class="qte-btn" onclick="changeQte('${p.ean}','${p.key}','${p.plateau}',-1)">−</button>
-            <span class="qte-val" onclick="setQte('${p.ean}','${p.key}','${p.plateau}')">${p.qte||1}</span>
-            <button class="qte-btn" onclick="changeQte('${p.ean}','${p.key}','${p.plateau}',1)">+</button>
+            <div class="list-ean">${p.ean}${p.marque?' · '+p.marque:''} · ${Number(p.prix_vente_ttc || 0).toFixed(2)} € TTC · ×${p.nb_facings || 1}</div>
           </div>
           <button class="list-del" onclick="removeOne('${p.ean}','${p.key}','${p.plateau}')">✕</button>
         </div>`).join('')}
@@ -1044,39 +863,13 @@ function showList(){
     `).join('');
   }
   const nbPlat = new Set(scanned.map(p => p.key+'__'+p.plateau)).size;
-  const u = totalUnits();
-  $('list-sub').textContent = `${u} unité${u>1?'s':''} · ${scanned.length} référence${scanned.length>1?'s':''} sur ${nbPlat} plateau${nbPlat>1?'x':''}`;
+  $('list-sub').textContent = `${scanned.length} produit${scanned.length>1?'s':''} sur ${nbPlat} plateau${nbPlat>1?'x':''}`;
   openModal('modal-list');
 }
 
 function removeOne(ean, key, pl){
   scanned = scanned.filter(p => !(p.ean===ean && p.key===key && p.plateau===pl));
-  refreshCount();
-  refreshVisual();
-  showList();
-}
-
-// Quantité : −/+ d'une unité (0 → supprime la ligne)
-function changeQte(ean, key, pl, delta){
-  const p = scanned.find(x => x.ean===ean && x.key===key && x.plateau===pl);
-  if(!p) return;
-  p.qte = (p.qte||1) + delta;
-  if(p.qte < 1){ removeOne(ean, key, pl); return; }
-  refreshCount();
-  refreshVisual();
-  showList();
-}
-
-// Quantité : saisie directe (ex. 10) en tapant le nombre
-function setQte(ean, key, pl){
-  const p = scanned.find(x => x.ean===ean && x.key===key && x.plateau===pl);
-  if(!p) return;
-  const v = prompt(`Combien d'unités de "${p.nom}" ?`, p.qte||1);
-  if(v===null) return;
-  const n = parseInt(v, 10);
-  if(isNaN(n)) return;
-  if(n < 1){ removeOne(ean, key, pl); return; }
-  p.qte = n;
+  saveSession();
   refreshCount();
   refreshVisual();
   showList();
@@ -1084,22 +877,12 @@ function setQte(ean, key, pl){
 
 function clearAll(){
   if(scanned.length === 0) return;
-  if(!confirm(`Effacer les ${totalUnits()} unité(s) scannées ?\n(Le meuble courant est conservé.)`)) return;
+  if(!confirm(`Effacer les ${scanned.length} produits scannés ?`)) return;
   scanned = [];
+  localStorage.removeItem(SESSION_KEY);
   refreshCount();
   refreshVisual();
   closeModal('modal-list');
-}
-
-// Nouvelle officine : remet TOUT à zéro (produits + meuble) et revient à l'accueil.
-// La base produits locale est conservée.
-function newOfficine(){
-  if(scanned.length){
-    if(!confirm(`Nouvelle officine : tout remettre à zéro ?\n\n${totalUnits()} unité(s) vont être effacées.\nPense à 📤 Exporter avant si ce n'est pas déjà fait.`)) return;
-  }
-  try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
-  scanned = [];
-  location.reload(); // recharge propre : écran d'accueil, meuble réinitialisé, base produits conservée
 }
 
 // ════════════════════════════════════════
@@ -1112,8 +895,11 @@ function exportData(){
     if(!groups[p.key]) groups[p.key] = {meuble: p.key, plateaux: {}};
     if(!groups[p.key].plateaux[p.plateau]) groups[p.key].plateaux[p.plateau] = [];
     groups[p.key].plateaux[p.plateau].push({
-      ean: p.ean, nom: p.nom, marque: p.marque, quantite: p.qte||1,
+      ean: p.ean, nom: p.nom, marque: p.marque,
       source_lookup: p.source, a_enrichir: p.source==='inconnu',
+      prix_vente_ttc: p.prix_vente_ttc,
+      source_prix: p.source_prix || 'manuel',
+      nb_facings: p.nb_facings || 1,
     });
   });
   const data = {
@@ -1176,35 +962,10 @@ function loadBaseFromStorage(){
   }catch(e){}
 }
 loadBaseFromStorage();
-
-// ════════════════════════════════════════
-// SAUVEGARDE AUTO DE SESSION (résiste au refresh / fermeture d'onglet)
-// ════════════════════════════════════════
-function persistSession(){
-  try{ localStorage.setItem(SESSION_KEY, JSON.stringify({scanned, M})); }catch(e){}
-}
-function restoreSession(){
-  try{
-    const raw = localStorage.getItem(SESSION_KEY);
-    if(!raw) return;
-    const d = JSON.parse(raw);
-    if(Array.isArray(d.scanned)) scanned = d.scanned;
-    if(d.M && typeof d.M === 'object') M = Object.assign(M, d.M);
-  }catch(e){}
-  if(scanned.length){
-    refreshCount();
-    if(M.type){ hide('welcome'); refreshVisual(); }
-    toast(`↩︎ Session restaurée — ${totalUnits()} unité(s)`, 'green');
-  }
-}
 restoreSession();
-</script>
-<script>
-// Enregistrement du service worker → app installable + hors-ligne
+window.addEventListener('beforeunload', saveSession);
 if('serviceWorker' in navigator){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  });
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 </script>
 </body>
