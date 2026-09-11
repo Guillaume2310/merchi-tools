@@ -8,7 +8,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" href="./icons/favicon-64.png">
-<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script src="./lib/html5-qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--teal:#2E6B7A;--gold:#E8A838;--bg:#f5f4f0;--green:#2e7d32;--red:#D32F2F;--border:#d8d4cc}
@@ -388,7 +388,7 @@ let M = {            // meuble courant
 let scanned = [];     // [{ean, nom, marque, source, prix_vente_ttc, nb_facings, key}]
 let pendingProduct = null;
 let processingEan = false;
-let zxingReader = null;
+let qrScanner = null;
 let lastEan = null, lastEanTime = 0;
 let PROD_BASE = {};   // base locale produits_reference.json (chargée par l'utilisateur, persistée en localStorage)
 const BASE_KEY = 'merchi_scan_base_v1';
@@ -631,49 +631,60 @@ function countCurrent(){
 }
 
 async function startCamera(){
-  if(typeof ZXing === 'undefined'){
+  if(typeof Html5Qrcode === 'undefined'){
     $('cam-status').textContent = '⚠️ Librairie scan non chargée (vérifie ta connexion)';
     return;
   }
+  $('cam-status').textContent = '⏳ Démarrage caméra…';
   try{
-    // Limiter aux formats parapharma : EAN_13 surtout, plus EAN_8 / UPC / Code128
-    const hints = new Map();
-    const fmts = [
-      ZXing.BarcodeFormat.EAN_13,
-      ZXing.BarcodeFormat.EAN_8,
-      ZXing.BarcodeFormat.UPC_A,
-      ZXing.BarcodeFormat.UPC_E,
-      ZXing.BarcodeFormat.CODE_128,
+    qrScanner = new Html5Qrcode('cam-video-wrap', {verbose: false});
+    const formats = [
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.CODE_128,
     ];
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, fmts);
-    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-    zxingReader = new ZXing.BrowserMultiFormatReader(hints, 200);
-
-    $('cam-status').textContent = 'Cherche un code-barres…';
-    await zxingReader.decodeFromConstraints(
-      {video: {facingMode: {ideal: 'environment'}, width:{ideal:1280}, height:{ideal:720}}},
-      'video',
-      (result, err) => {
-        if(result){
-          const ean = result.getText();
-          const now = Date.now();
-          if(ean !== lastEan || now - lastEanTime > 2500){
-            lastEan = ean; lastEanTime = now;
-            onEanDetected(ean);
-          }
+    await qrScanner.start(
+      {facingMode: {ideal: 'environment'}},
+      {
+        fps: 30,
+        qrbox: (vw, vh) => ({
+          width: Math.round(Math.min(vw * 0.95, 480)),
+          height: Math.round(Math.min(vh * 0.45, 200)),
+        }),
+        formatsToSupport: formats,
+        experimentalFeatures: {useBarCodeDetectorIfSupported: true},
+        videoConstraints: {
+          facingMode: {ideal: 'environment'},
+          width: {ideal: 1920}, height: {ideal: 1080},
+          focusMode: 'continuous',
+          advanced: [{focusDistance: 0.2}],
+        },
+      },
+      (decodedText) => {
+        const now = Date.now();
+        if(decodedText !== lastEan || now - lastEanTime > 2500){
+          lastEan = decodedText; lastEanTime = now;
+          onEanDetected(decodedText);
         }
-      }
+      },
+      () => {}
     );
+    $('cam-status').textContent = '🔍 Pointe sur un code-barres';
   }catch(err){
     console.error(err);
-    $('cam-status').textContent = '🔒 Caméra refusée — utilise Saisir';
+    $('cam-status').textContent = `🔒 ${err.message || 'Caméra refusée'} — utilise Saisir`;
   }
 }
 
 function stopCamera(){
-  if(zxingReader){
-    try{ zxingReader.reset(); }catch(e){}
-    zxingReader = null;
+  if(qrScanner){
+    try{
+      if(qrScanner.isScanning) qrScanner.stop().catch(() => {});
+      qrScanner.clear();
+    }catch(e){}
+    qrScanner = null;
   }
 }
 

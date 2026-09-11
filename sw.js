@@ -1,6 +1,7 @@
 const CACHE = 'merchi-scan-v3-2026-09-11';
 const ASSETS = [
   './testscan.html',
+  './lib/html5-qrcode.min.js',
   './manifest.webmanifest',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
