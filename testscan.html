@@ -557,8 +557,8 @@ function renderShelves(host){
   const t = TYPES.find(x=>x.code===M.type);
   const k = baseKey();
   const rows = [];
-  // Numérotation : top → bot avec plateau N en haut
-  for(let n = M.np; n >= 1; n--){
+  // Numérotation : plateau 1 en haut, puis 2 vers le bas
+  for(let n = 1; n <= M.np; n++){
     const cnt = scanned.filter(p => p.key===k && p.plateau===String(n)).length;
     const isActive = M.plateauActif === String(n);
     const zone = zoneRetail(n, M.np);
@@ -575,13 +575,14 @@ function renderShelves(host){
 }
 
 function zoneRetail(n, total){
-  // Plateau 1 = sol, plateau total = haut
-  // Or = ~yeux/mains, argent = haut, bronze = milieu/bas, plomb = sol/très haut
-  const ratio = n / total;
+  // Plateau 1 = haut, plateau total = sol
+  // Haut = au-dessus des yeux, or = yeux, argent = mains, bronze = bas, plomb = sol
+  const ratio = (total - n + 1) / total;
   if(total === 1) return {color:'#FFC107', label:'Or'};
-  if(ratio > 0.85) return {color:'#9E9E9E', label:'Argent'};
-  if(ratio > 0.55) return {color:'#FFC107', label:'Or'};
-  if(ratio > 0.30) return {color:'#CD7F32', label:'Bronze'};
+  if(ratio > 0.85) return {color:'#9E9E9E', label:'Haut'};
+  if(ratio >= 0.75) return {color:'#FFC107', label:'Or'};
+  if(ratio > 0.50) return {color:'#C0C0C0', label:'Argent'};
+  if(ratio > 0.20) return {color:'#CD7F32', label:'Bronze'};
   return {color:'#607D8B', label:'Plomb'};
 }
 
