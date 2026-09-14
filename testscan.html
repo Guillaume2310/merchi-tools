@@ -645,17 +645,19 @@ async function startCamera(){
       Html5QrcodeSupportedFormats.UPC_A,
       Html5QrcodeSupportedFormats.UPC_E,
       Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.CODE_93,
+      Html5QrcodeSupportedFormats.ITF,
     ];
     await qrScanner.start(
       {facingMode: {ideal: 'environment'}},
       {
         fps: 30,
         qrbox: (vw, vh) => ({
-          width: Math.round(Math.min(vw * 0.95, 480)),
-          height: Math.round(Math.min(vh * 0.45, 200)),
+          width: Math.round(Math.min(vw * 0.98, 620)),
+          height: Math.round(Math.min(vh * 0.70, 360)),
         }),
         formatsToSupport: formats,
-        experimentalFeatures: {useBarCodeDetectorIfSupported: true},
         videoConstraints: {
           facingMode: {ideal: 'environment'},
           width: {ideal: 1920}, height: {ideal: 1080},
