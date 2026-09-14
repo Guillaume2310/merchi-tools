@@ -1,11 +1,8 @@
-/* Service worker Merchi Scan — mode hors-ligne (app installable PWA) */
-const CACHE = 'merchi-scan-v2';
+const CACHE = 'merchi-scan-v3-2026-09-11';
 const ASSETS = [
   './testscan.html',
-  './pharma.html',
   './lib/html5-qrcode.min.js',
   './manifest.webmanifest',
-  './pharma.webmanifest',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -13,47 +10,40 @@ const ASSETS = [
   './icons/favicon-64.png'
 ];
 
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(
+self.addEventListener('activate', event => {
+  event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });
 
-self.addEventListener('fetch', e => {
-  const req = e.request;
-  if (req.method !== 'GET') return;
+self.addEventListener('fetch', event => {
+  if(event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if(url.origin !== self.location.origin) return;
 
-  const url = new URL(req.url);
-  // APIs externes (Open Beauty/Food Facts) : on laisse passer au réseau, jamais en cache.
-  // Hors-ligne, elles échouent et l'app retombe sur la base produits locale.
-  if (url.origin !== self.location.origin) return;
-
-  const isHTML = req.mode === 'navigate'
-    || url.pathname.endsWith('.html')
-    || url.pathname.endsWith('/');
-
-  if (isHTML) {
-    // Réseau d'abord (toujours la dernière version en ligne), cache en secours hors-ligne.
-    e.respondWith(
-      fetch(req)
-        .then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); return res; })
-        .catch(() => caches.match(req).then(r => r || caches.match('./testscan.html')))
+  const isPage = event.request.mode === 'navigate' || url.pathname.endsWith('.html');
+  if(isPage){
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const copy = response.clone();
+          caches.open(CACHE).then(cache => cache.put(event.request, copy));
+          return response;
+        })
+        .catch(() => caches.match(event.request).then(cached => cached || caches.match('./testscan.html')))
     );
-  } else {
-    // Assets statiques (lib, icônes) : cache d'abord pour la vitesse et l'offline.
-    e.respondWith(
-      caches.match(req).then(cached => cached || fetch(req).then(res => {
-        if (res && res.status === 200) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
-        return res;
-      }))
-    );
+    return;
   }
+
+  event.respondWith(
+    caches.match(event.request).then(cached => cached || fetch(event.request))
+  );
 });
