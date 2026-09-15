@@ -74,7 +74,17 @@ body{font-family:system-ui,Arial,sans-serif;background:#1a1a1a;color:#fff;font-s
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .modal-handle{width:40px;height:4px;background:#ddd;border-radius:2px;margin:-10px auto 14px}
 .modal-title{font-weight:700;font-size:16px;color:var(--teal);margin-bottom:4px}
+.modal-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .modal-sub{font-size:12px;color:#888;margin-bottom:14px}
+.lex-btn{background:none;border:1.5px solid var(--teal);color:var(--teal);font-size:11px;font-weight:700;border-radius:14px;padding:5px 10px;cursor:pointer}
+.lex-btn:active{background:var(--teal);color:#fff}
+.type-lexique{display:none;max-height:220px;overflow-y:auto;background:#f7f5f0;border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.type-lexique.show{display:block}
+.type-lexique-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.type-lexique-item:last-child{border-bottom:none}
+.type-lexique-code{font-family:monospace;font-weight:700;color:var(--teal);width:32px;flex-shrink:0}
+.type-lexique-full{font-size:12.5px;font-weight:700;color:#1a1a1a}
+.type-lexique-desc{font-size:11.5px;color:#666;line-height:1.4;margin-top:1px}
 
 /* Sélecteur type */
 .type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
@@ -166,6 +176,17 @@ input:focus{outline:none;border-color:var(--teal)}
 .toast.green{background:var(--green)}
 .toast.red{background:var(--red)}
 
+/* ─── ÉCRAN ACCÈS ─── */
+.gate{position:fixed;inset:0;background:linear-gradient(135deg,var(--teal),#1a4a5a);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;padding:calc(30px + env(safe-area-inset-top)) calc(30px + env(safe-area-inset-right)) calc(30px + env(safe-area-inset-bottom)) calc(30px + env(safe-area-inset-left));z-index:800;text-align:center}
+.gate-logo{font-size:18px;font-weight:700;letter-spacing:6px;color:var(--gold);margin-bottom:8px}
+.gate-title{font-size:20px;font-weight:700;margin-bottom:22px}
+.gate-input{width:100%;max-width:280px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.35);border-radius:12px;padding:13px 16px;font-size:15px;color:#fff;margin-bottom:12px;text-align:center}
+.gate-input::placeholder{color:rgba(255,255,255,.55)}
+.gate-input:focus{outline:none;border-color:var(--gold)}
+.gate-error{font-size:12px;color:#ffb4b4;min-height:16px;margin-bottom:8px}
+.gate-btn{background:var(--gold);color:#1a4a5a;font-weight:700;padding:14px 40px;border-radius:30px;border:none;font-size:15px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35);margin-top:4px}
+.gate-btn:active{filter:brightness(.9)}
+
 /* ─── ÉCRAN BIENVENUE ─── */
 .welcome{position:fixed;inset:0;background:linear-gradient(135deg,var(--teal),#1a4a5a);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;padding:calc(30px + env(safe-area-inset-top)) calc(30px + env(safe-area-inset-right)) calc(30px + env(safe-area-inset-bottom)) calc(30px + env(safe-area-inset-left));z-index:50;text-align:center}
 .welcome-logo{font-size:18px;font-weight:700;letter-spacing:6px;color:var(--gold);margin-bottom:8px}
@@ -192,6 +213,16 @@ input:focus{outline:none;border-color:var(--teal)}
 </head>
 <body>
 
+<!-- ÉCRAN ACCÈS (code officine + prénom) -->
+<div class="gate" id="gate">
+  <div class="gate-logo">M E R C H I</div>
+  <div class="gate-title">Accès scanner</div>
+  <input class="gate-input" id="gate-code" placeholder="Code officine" autocapitalize="characters" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('gate-prenom').focus()">
+  <input class="gate-input" id="gate-prenom" placeholder="Ton prénom" autocomplete="off" onkeydown="if(event.key==='Enter')submitGate()">
+  <div class="gate-error" id="gate-error"></div>
+  <button class="gate-btn" onclick="submitGate()">Valider</button>
+</div>
+
 <!-- ÉCRAN BIENVENUE -->
 <div class="welcome" id="welcome">
   <div class="welcome-logo">M E R C H I</div>
@@ -203,6 +234,7 @@ input:focus{outline:none;border-color:var(--teal)}
   <button class="welcome-btn-sec" onclick="tourStart()">🎓 Comment ça marche ? (visite guidée)</button>
   <button class="welcome-btn-sec" onclick="document.getElementById('file-base').click()">📦 Charger ma base produits</button>
   <div class="welcome-base-status" id="base-status">Aucune base locale — recherche via APIs en ligne</div>
+  <div class="welcome-base-status" id="access-status"></div>
   <input type="file" id="file-base" accept=".json,application/json" style="display:none" onchange="loadBase(this)">
 </div>
 
@@ -246,8 +278,13 @@ input:focus{outline:none;border-color:var(--teal)}
 <div class="modal-bg" id="modal-type">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title">Type de meuble</div>
+    <div class="modal-title-row">
+      <div class="modal-title">Type de meuble</div>
+      <button class="lex-btn" onclick="toggleLexique()">ℹ️ Lexique</button>
+    </div>
     <div class="modal-sub">Choisis le type puis numérote-le</div>
+
+    <div class="type-lexique" id="type-lexique"></div>
 
     <div class="type-grid" id="type-grid"></div>
 
@@ -397,15 +434,15 @@ input:focus{outline:none;border-color:var(--teal)}
 // CONFIG
 // ════════════════════════════════════════
 const TYPES = [
-  {code:'M',  label:'Mural',     icon:'▮', plateaux:true,  faces:false},
-  {code:'G',  label:'Gondole',   icon:'⬚', plateaux:true,  faces:true},
-  {code:'TG', label:'Tête gond.',icon:'◰', plateaux:true,  faces:false},
-  {code:'CO', label:'Comptoir',  icon:'▭', plateaux:true,  faces:false},
-  {code:'BV', label:'Bac vrac',  icon:'▣', plateaux:false, faces:false},
-  {code:'TA', label:'Table',     icon:'▢', plateaux:false, faces:false},
-  {code:'ML', label:'Lat.',      icon:'▮', plateaux:true,  faces:false},
-  {code:'MO', label:'Module',    icon:'▩', plateaux:true,  faces:false},
-  {code:'GC', label:'Gd. caisse',icon:'▦', plateaux:true,  faces:false},
+  {code:'M',  label:'Mural',     icon:'▮', plateaux:true,  faces:false, full:'Linéaire Mural',    desc:'Meuble contre un mur, avec plusieurs étagères empilées (plateaux).'},
+  {code:'G',  label:'Gondole',   icon:'⬚', plateaux:true,  faces:true,  full:'Gondole Centrale',  desc:'Meuble au milieu du magasin, visible et accessible des deux côtés (Face A et Face B).'},
+  {code:'TG', label:'Tête gond.',icon:'◰', plateaux:true,  faces:false, full:'Tête de Gondole',   desc:'Le bout d\'une gondole, souvent réservé à la mise en avant / aux promotions.'},
+  {code:'CO', label:'Comptoir',  icon:'▭', plateaux:true,  faces:false, full:'Comptoir',          desc:'Meuble de comptoir, près de l\'accueil ou de la caisse.'},
+  {code:'BV', label:'Bac vrac',  icon:'▣', plateaux:false, faces:false, full:'Bac Vrac',          desc:'Bac sans étagères : les produits sont posés en vrac, pas rangés par plateau.'},
+  {code:'TA', label:'Table',     icon:'▢', plateaux:false, faces:false, full:'Table',             desc:'Table de présentation, un seul niveau de produits.'},
+  {code:'ML', label:'Lat.',      icon:'▮', plateaux:true,  faces:false, full:'Multilame',         desc:'Présentoir vertical fin à lames, plusieurs étagères peu profondes.'},
+  {code:'MO', label:'Module',    icon:'▩', plateaux:true,  faces:false, full:'Meuble Orthopédie', desc:'Meuble dédié à l\'orthopédie / à la contention.'},
+  {code:'GC', label:'Gd. caisse',icon:'▦', plateaux:true,  faces:false, full:'Gondole Comptoir',  desc:'Petit meuble bas, souvent placé près du comptoir ou de la caisse.'},
 ];
 
 const DEFAULT_DIMS = {
@@ -438,6 +475,15 @@ let PROD_BASE = {};   // base locale produits_reference.json (chargée par l'uti
 const BASE_KEY = 'merchi_scan_base_v1';
 const SESSION_KEY = 'merchi_scan_session_v2';
 const TOUR_KEY = 'merchi_tour_done_v1';
+const ACCESS_KEY = 'merchi_scan_access_v1';
+
+// Codes d'accès par officine — un code = une officine, à distribuer par Guillaume
+const OFFICINES = {
+  'FONTAINE2026': 'Officine Fontaine',
+  'ALPHONSE2026': 'Officine Alphonse',
+};
+let ACCESS_OFFICINE = null;
+let ACCESS_PRENOM = null;
 let tourActive = false;
 let tourStep = -1;
 
@@ -469,7 +515,24 @@ function openType(){
     </div>
   `).join('');
   $('inp-id').value = M.num || '01';
+  $('type-lexique').classList.remove('show');
   openModal('modal-type');
+}
+
+function toggleLexique(){
+  const el = $('type-lexique');
+  if(!el.innerHTML){
+    el.innerHTML = TYPES.map(t => `
+      <div class="type-lexique-item">
+        <div class="type-lexique-code">${t.code}</div>
+        <div>
+          <div class="type-lexique-full">${t.full}</div>
+          <div class="type-lexique-desc">${t.desc}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+  el.classList.toggle('show');
 }
 
 function selectType(code){
@@ -909,7 +972,7 @@ function confirmProduct(){
   const facings = Number.parseInt($('inp-facings').value, 10);
   if(!Number.isFinite(prix) || prix < 0){toast('Saisis le prix de vente TTC', 'red'); return;}
   if(!Number.isInteger(facings) || facings < 1){toast('Les facings doivent être au moins à 1', 'red'); return;}
-  const nouveau = {...pendingProduct, prix_vente_ttc: Math.round(prix * 100) / 100, nb_facings: facings, source_prix: 'manuel'};
+  const nouveau = {...pendingProduct, prix_vente_ttc: Math.round(prix * 100) / 100, nb_facings: facings, source_prix: 'manuel', scanne_par: ACCESS_PRENOM || ''};
   scanned.push(nouveau);
   addCamChip(nouveau, true);
   closeModal('modal-product');
@@ -1068,11 +1131,14 @@ function exportData(){
       prix_vente_ttc: p.prix_vente_ttc,
       source_prix: p.source_prix || 'manuel',
       nb_facings: p.nb_facings || 1,
+      scanne_par: p.scanne_par || ACCESS_PRENOM || '',
     });
   });
   const data = {
     date_scan: new Date().toISOString().slice(0, 16).replace('T', ' '),
     nb_total: scanned.length,
+    officine: ACCESS_OFFICINE || '',
+    scanne_par: ACCESS_PRENOM || '',
     meubles: Object.values(groups).map(g => ({
       meuble: g.meuble,
       plateaux: Object.entries(g.plateaux).map(([num, prods]) => ({numero: num, produits: prods})),
@@ -1256,9 +1322,59 @@ function maybeAutoStartTour(){
   }catch(e){}
 }
 
-loadBaseFromStorage();
-restoreSession();
-maybeAutoStartTour();
+// ════════════════════════════════════════
+// ACCÈS (code officine + prénom)
+// ════════════════════════════════════════
+function checkAccess(){
+  try{
+    const raw = localStorage.getItem(ACCESS_KEY);
+    if(!raw) return false;
+    const saved = JSON.parse(raw);
+    if(saved && saved.code && OFFICINES[saved.code]){
+      ACCESS_OFFICINE = OFFICINES[saved.code];
+      ACCESS_PRENOM = saved.prenom || '';
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+function renderAccessStatus(){
+  const el = $('access-status');
+  if(!el) return;
+  el.innerHTML = `✅ ${ACCESS_OFFICINE} — ${ACCESS_PRENOM} · <a href="#" onclick="resetAccess();return false;" style="color:var(--gold)">changer</a>`;
+}
+function resetAccess(){
+  try{ localStorage.removeItem(ACCESS_KEY); }catch(e){}
+  ACCESS_OFFICINE = null; ACCESS_PRENOM = null;
+  $('gate-code').value = ''; $('gate-prenom').value = ''; $('gate-error').textContent = '';
+  $('gate').style.display = 'flex';
+  $('gate-code').focus();
+}
+function submitGate(){
+  const code = ($('gate-code').value || '').trim().toUpperCase();
+  const prenom = ($('gate-prenom').value || '').trim();
+  const err = $('gate-error');
+  if(!code || !OFFICINES[code]){ err.textContent = 'Code officine invalide.'; return; }
+  if(!prenom){ err.textContent = 'Indique ton prénom.'; return; }
+  err.textContent = '';
+  ACCESS_OFFICINE = OFFICINES[code];
+  ACCESS_PRENOM = prenom;
+  try{ localStorage.setItem(ACCESS_KEY, JSON.stringify({code, prenom})); }catch(e){}
+  initAfterAccess();
+}
+function initAfterAccess(){
+  $('gate').style.display = 'none';
+  renderAccessStatus();
+  loadBaseFromStorage();
+  restoreSession();
+  maybeAutoStartTour();
+}
+
+if(checkAccess()){
+  initAfterAccess();
+} else {
+  $('gate').style.display = 'flex';
+}
 window.addEventListener('beforeunload', saveSession);
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(() => {});
