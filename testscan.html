@@ -20,6 +20,7 @@ body{font-family:system-ui,Arial,sans-serif;background:#1a1a1a;color:#fff;font-s
 .label{font-size:14px;font-weight:700;color:#fff;flex:1;text-align:center}
 .label-sub{font-size:10px;color:rgba(255,255,255,.65);font-weight:400}
 .count-badge{background:rgba(0,0,0,.25);padding:5px 10px;border-radius:14px;font-size:13px;font-weight:700;flex-shrink:0;display:flex;align-items:center;gap:5px;cursor:pointer}
+.icon{flex-shrink:0}
 .count-badge:active{filter:brightness(.8)}
 
 /* ─── ZONE VISUEL MEUBLE ─── */
@@ -58,12 +59,14 @@ body{font-family:system-ui,Arial,sans-serif;background:#1a1a1a;color:#fff;font-s
 .bot-bar{background:#1a1a1a;border-top:1px solid #444;padding:14px 12px calc(14px + env(safe-area-inset-bottom));padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right));display:flex;align-items:center;gap:8px;min-height:120px;flex-shrink:0}
 .bot-btn{flex:1;background:#2e2e2e;border:none;color:#fff;border-radius:14px;padding:12px 10px;font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:.15s}
 .bot-btn:active{filter:brightness(1.3)}
-.bot-btn-icon{font-size:24px;line-height:1}
+.bot-btn-icon{line-height:1}
+.bot-btn-icon svg{width:23px;height:23px}
 .bot-btn-label{font-size:10px;line-height:1.2;text-align:center}
 .bot-btn-val{font-size:13px;font-weight:700;color:var(--gold);margin-top:1px;line-height:1.2}
 .scan-btn{flex:1.5;background:var(--gold);color:#1a1a1a;border:none;border-radius:18px;padding:14px;font-size:14px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;box-shadow:0 6px 14px rgba(232,168,56,.4);transition:.15s}
 .scan-btn:active{transform:scale(.95)}
-.scan-btn-icon{font-size:30px;line-height:1}
+.scan-btn-icon{line-height:1}
+.scan-btn-icon svg{width:28px;height:28px}
 .scan-btn:disabled{background:#666;color:#999;box-shadow:none}
 
 /* ─── MODAL ─── */
@@ -73,10 +76,10 @@ body{font-family:system-ui,Arial,sans-serif;background:#1a1a1a;color:#fff;font-s
 .modal{background:#fff;color:#1a1a1a;width:100%;border-top-left-radius:18px;border-top-right-radius:18px;padding:18px 18px calc(24px + env(safe-area-inset-bottom));animation:slideUp .25s;max-height:80vh;overflow-y:auto}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .modal-handle{width:40px;height:4px;background:#ddd;border-radius:2px;margin:-10px auto 14px}
-.modal-title{font-weight:700;font-size:16px;color:var(--teal);margin-bottom:4px}
+.modal-title{font-weight:700;font-size:16px;color:var(--teal);margin-bottom:4px;display:flex;align-items:center;gap:8px}
 .modal-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .modal-sub{font-size:12px;color:#888;margin-bottom:14px}
-.lex-btn{background:none;border:1.5px solid var(--teal);color:var(--teal);font-size:11px;font-weight:700;border-radius:14px;padding:5px 10px;cursor:pointer}
+.lex-btn{background:none;border:1.5px solid var(--teal);color:var(--teal);font-size:11px;font-weight:700;border-radius:14px;padding:5px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
 .lex-btn:active{background:var(--teal);color:#fff}
 .type-lexique{display:none;max-height:220px;overflow-y:auto;background:#f7f5f0;border-radius:10px;padding:10px 12px;margin-bottom:12px}
 .type-lexique.show{display:block}
@@ -85,6 +88,15 @@ body{font-family:system-ui,Arial,sans-serif;background:#1a1a1a;color:#fff;font-s
 .type-lexique-code{font-family:monospace;font-weight:700;color:var(--teal);width:32px;flex-shrink:0}
 .type-lexique-full{font-size:12.5px;font-weight:700;color:#1a1a1a}
 .type-lexique-desc{font-size:11.5px;color:#666;line-height:1.4;margin-top:1px}
+
+/* Installation PWA */
+.install-step{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.install-step:last-child{border-bottom:none}
+.install-num{background:var(--teal);color:#fff;font-weight:700;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.install-step div:last-child{font-size:14px;line-height:1.4}
+.install-ok{text-align:center;padding:20px 0;font-size:15px}
+.install-ok svg{color:var(--green)}
+.install-step svg{vertical-align:-3px;color:var(--teal)}
 
 /* Sélecteur type */
 .type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
@@ -193,9 +205,10 @@ input:focus{outline:none;border-color:var(--teal)}
 .welcome-title{font-size:22px;font-weight:700;margin-bottom:10px}
 .welcome-sub{font-size:13px;opacity:.75;max-width:300px;margin-bottom:30px;line-height:1.6}
 .welcome-btn{background:var(--gold);color:#1a4a5a;font-weight:700;padding:15px 40px;border-radius:30px;border:none;font-size:15px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35)}
-.welcome-btn-sec{margin-top:18px;background:transparent;color:#fff;font-weight:600;padding:11px 24px;border-radius:24px;border:1.5px solid rgba(255,255,255,.45);font-size:13px;cursor:pointer}
+.welcome-btn-sec{margin-top:18px;background:transparent;color:#fff;font-weight:600;padding:11px 24px;border-radius:24px;border:1.5px solid rgba(255,255,255,.45);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
 .welcome-btn-sec:active{filter:brightness(.8)}
 .welcome-base-status{margin-top:10px;font-size:11px;opacity:.7;min-height:14px}
+.welcome-base-status svg{vertical-align:-2px}
 
 /* ─── VISITE GUIDÉE ─── */
 .tour-caption{position:fixed;left:14px;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));background:#1f1f1f;border:1.5px solid var(--gold);border-radius:16px;padding:16px 18px;box-shadow:0 10px 30px rgba(0,0,0,.55);z-index:600;display:none;color:#fff}
@@ -231,8 +244,9 @@ input:focus{outline:none;border-color:var(--teal)}
     Choisis le type de meuble, ses dimensions, puis tape sur le plateau et scanne les produits.
   </div>
   <button class="welcome-btn" onclick="hide('welcome');openType()">▶ Commencer</button>
-  <button class="welcome-btn-sec" onclick="tourStart()">🎓 Comment ça marche ? (visite guidée)</button>
-  <button class="welcome-btn-sec" onclick="document.getElementById('file-base').click()">📦 Charger ma base produits</button>
+  <button class="welcome-btn-sec" onclick="tourStart()"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.3v7.4l6-3.7-6-3.7z" fill="currentColor" stroke="none"/></svg> Comment ça marche ? (visite guidée)</button>
+  <button class="welcome-btn-sec" onclick="openInstallModal()"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2" width="11" height="20" rx="2.5"/><path d="M10.5 18h3"/></svg> Installer sur mon téléphone</button>
+  <button class="welcome-btn-sec" onclick="document.getElementById('file-base').click()"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M8 11l4 4 4-4"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/></svg> Charger ma base produits</button>
   <div class="welcome-base-status" id="base-status">Aucune base locale — recherche via APIs en ligne</div>
   <div class="welcome-base-status" id="access-status"></div>
   <input type="file" id="file-base" accept=".json,application/json" style="display:none" onchange="loadBase(this)">
@@ -245,7 +259,7 @@ input:focus{outline:none;border-color:var(--teal)}
     <div id="meuble-label">— Aucun meuble —</div>
     <div class="label-sub" id="plateau-label">Tape un plateau</div>
   </div>
-  <div class="count-badge" onclick="showList()" id="count-badge">📋 <span id="count-num">0</span></div>
+  <div class="count-badge" onclick="showList()" id="count-badge"><svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3a1 1 0 011-1h4a1 1 0 011 1v1"/><path d="M9 10.5h6M9 13.5h6M9 16.5h4"/></svg> <span id="count-num">0</span></div>
 </div>
 
 <!-- ZONE VISUEL -->
@@ -259,16 +273,16 @@ input:focus{outline:none;border-color:var(--teal)}
 <!-- BARRE BAS -->
 <div class="bot-bar">
   <button class="bot-btn" onclick="openType()">
-    <div class="bot-btn-icon">📦</div>
+    <div class="bot-btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>
     <div class="bot-btn-label">Type</div>
     <div class="bot-btn-val" id="btn-type-val">—</div>
   </button>
   <button class="scan-btn" id="scan-btn" onclick="openCamera()" disabled>
-    <div class="scan-btn-icon">📷</div>
+    <div class="scan-btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2h6l2 2h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13" r="3.5"/></svg></div>
     <div>SCANNER</div>
   </button>
   <button class="bot-btn" onclick="openDims()" id="btn-dims" disabled>
-    <div class="bot-btn-icon">📏</div>
+    <div class="bot-btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="1.5"/><path d="M7 7v3M11 7v3M15 7v3"/></svg></div>
     <div class="bot-btn-label">Taille</div>
     <div class="bot-btn-val" id="btn-dims-val">—</div>
   </button>
@@ -280,7 +294,7 @@ input:focus{outline:none;border-color:var(--teal)}
     <div class="modal-handle"></div>
     <div class="modal-title-row">
       <div class="modal-title">Type de meuble</div>
-      <button class="lex-btn" onclick="toggleLexique()">ℹ️ Lexique</button>
+      <button class="lex-btn" onclick="toggleLexique()"><svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 10.5v6"/><circle cx="12" cy="7.3" r=".9" fill="currentColor" stroke="none"/></svg> Lexique</button>
     </div>
     <div class="modal-sub">Choisis le type puis numérote-le</div>
 
@@ -372,6 +386,20 @@ input:focus{outline:none;border-color:var(--teal)}
   </div>
 </div>
 
+<!-- ─── MODAL INSTALLATION ─── -->
+<div class="modal-bg" id="modal-install">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2" width="11" height="20" rx="2.5"/><path d="M10.5 18h3"/></svg> Installe l'appli sur ton téléphone</div>
+    <div class="modal-sub">Pour ne JAMAIS perdre tes scans, même après plusieurs semaines sans l'ouvrir</div>
+    <div id="install-steps"></div>
+    <div class="modal-actions">
+      <button class="btn btn-gray" onclick="closeInstallModal()">Plus tard</button>
+      <button class="btn btn-teal" onclick="closeInstallModal()">✓ Compris</button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── MODAL VALIDATION PRODUIT ─── -->
 <div class="modal-bg" id="modal-product">
   <div class="modal">
@@ -414,9 +442,9 @@ input:focus{outline:none;border-color:var(--teal)}
     </div>
     <div class="list-body" id="list-body"></div>
     <div style="padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:#fff;display:flex;gap:8px;border-top:1px solid #eee">
-      <button class="btn" style="background:#fce4ec;color:#c62828" onclick="clearAll()">🗑 Effacer</button>
-      <button class="btn btn-outline" onclick="saveSessionManually()">💾 Sauver</button>
-      <button class="btn btn-green" onclick="exportData()">📤 Exporter</button>
+      <button class="btn" style="background:#fce4ec;color:#c62828" onclick="clearAll()"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13"/><path d="M10 11v6M14 11v6"/></svg> Effacer</button>
+      <button class="btn btn-outline" onclick="saveSessionManually()"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z"/><path d="M8 4v5h7V4"/><path d="M8 21v-6h8v6"/></svg> Sauver</button>
+      <button class="btn btn-green" onclick="exportData()"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/></svg> Exporter</button>
     </div>
   </div>
 </div>
@@ -476,6 +504,7 @@ const BASE_KEY = 'merchi_scan_base_v1';
 const SESSION_KEY = 'merchi_scan_session_v2';
 const TOUR_KEY = 'merchi_tour_done_v1';
 const ACCESS_KEY = 'merchi_scan_access_v1';
+const INSTALL_KEY = 'merchi_install_seen_v1';
 
 // Codes d'accès par officine — un code = une officine, à distribuer par Guillaume
 const OFFICINES = {
@@ -484,6 +513,28 @@ const OFFICINES = {
 };
 let ACCESS_OFFICINE = null;
 let ACCESS_PRENOM = null;
+
+// ════════════════════════════════════════
+// ICÔNES (SVG maison, pas d'emoji)
+// ════════════════════════════════════════
+const ICONS = {
+  box:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>',
+  camera:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2h6l2 2h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  ruler:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="1.5"/><path d="M7 7v3M11 7v3M15 7v3"/></svg>',
+  clipboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3a1 1 0 011-1h4a1 1 0 011 1v1"/><path d="M9 10.5h6M9 13.5h6M9 16.5h4"/></svg>',
+  play:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.3v7.4l6-3.7-6-3.7z" fill="currentColor" stroke="none"/></svg>',
+  phone:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2" width="11" height="20" rx="2.5"/><path d="M10.5 18h3"/></svg>',
+  save:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z"/><path d="M8 4v5h7V4"/><path d="M8 21v-6h8v6"/></svg>',
+  trash:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13"/><path d="M10 11v6M14 11v6"/></svg>',
+  upload:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M8 11l4 4 4-4"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/></svg>',
+  check:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5 5-5.5"/></svg>',
+  info:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 10.5v6"/><circle cx="12" cy="7.3" r=".9" fill="currentColor" stroke="none"/></svg>',
+};
+function ic(name, size){
+  const svg = ICONS[name] || '';
+  return size ? svg.replace('<svg ', `<svg class="icon" width="${size}" height="${size}" `) : svg.replace('<svg ', '<svg class="icon" ');
+}
 let tourActive = false;
 let tourStep = -1;
 
@@ -599,7 +650,7 @@ function selectBottomPlateau(withGuide){
   if(!M.np) return;
   M.plateauActif = String(M.np);
   if(withGuide && !tourActive){
-    toast(`👇 Commence par le plateau du bas (Plateau ${M.np}), tu remonteras ensuite`, '');
+    toast(`▼ Commence par le plateau du bas (Plateau ${M.np}), tu remonteras ensuite`, '');
   }
 }
 
@@ -610,9 +661,9 @@ function finishPlateau(){
   if(current > 1){
     const next = current - 1;
     M.plateauActif = String(next);
-    toast(`⬆ Plateau ${current} terminé — passe au plateau ${next}`, 'green');
+    toast(`▲ Plateau ${current} terminé — passe au plateau ${next}`, 'green');
   } else {
-    toast('✅ Tous les plateaux sont scannés !', 'green');
+    toast('✓ Tous les plateaux sont scannés !', 'green');
   }
   refreshVisual();
 }
@@ -846,7 +897,7 @@ function flyToBackdrop(){
 
 async function startCamera(){
   if(typeof Html5Qrcode === 'undefined'){
-    $('cam-status').textContent = '⚠️ Librairie scan non chargée (vérifie ta connexion)';
+    $('cam-status').textContent = 'Librairie scan non chargée (vérifie ta connexion)';
     return;
   }
   $('cam-status').textContent = '⏳ Démarrage caméra…';
@@ -887,10 +938,10 @@ async function startCamera(){
       },
       () => {}
     );
-    $('cam-status').textContent = '🔍 Pointe sur un code-barres';
+    $('cam-status').textContent = 'Pointe sur un code-barres';
   }catch(err){
     console.error(err);
-    $('cam-status').textContent = `🔒 ${err.message || 'Caméra refusée'} — utilise Saisir`;
+    $('cam-status').textContent = `${err.message || 'Caméra refusée'} — utilise Saisir`;
   }
 }
 
@@ -947,7 +998,7 @@ async function onEanDetected(ean){
   processingEan = true;
   vibrate(60);
   $('cam-status').textContent = `EAN ${ean}…`;
-  toast(`📷 ${ean}`, 'green');
+  toast(ean, 'green');
 
   const info = await lookupEAN(ean);
   pendingProduct = {
@@ -1008,13 +1059,13 @@ function saveSession(){
       produits: scanned,
     }));
   }catch(err){
-    toast('⚠️ Sauvegarde locale impossible', 'red');
+    toast('Sauvegarde locale impossible', 'red');
   }
 }
 
 function saveSessionManually(){
   saveSession();
-  toast('💾 Session sauvegardée sur le téléphone', 'green');
+  toast('Session sauvegardée sur le téléphone', 'green');
 }
 
 function restoreSession(){
@@ -1037,7 +1088,7 @@ function restoreSession(){
     refreshVisual();
     $('btn-type-val').textContent = M.type ? M.type + M.num : '—';
     $('btn-dims').disabled = !M.type;
-    toast(`✅ ${scanned.length} produits restaurés`, 'green');
+    toast(`${scanned.length} produits restaurés`, 'green');
   }catch(err){
     localStorage.removeItem(SESSION_KEY);
   }
@@ -1151,7 +1202,7 @@ function exportData(){
   const a = document.createElement('a');
   a.href = url; a.download = `scan_merchi_${dt}.json`; a.click();
   URL.revokeObjectURL(url);
-  toast('📤 Fichier téléchargé', 'green');
+  toast('Fichier téléchargé', 'green');
 }
 
 // ════════════════════════════════════════
@@ -1161,7 +1212,7 @@ function setBaseStatus(n){
   const st = $('base-status');
   if(!st) return;
   st.textContent = n > 0
-    ? `📦 Base locale : ${n} produits — recherche locale prioritaire`
+    ? `Base locale : ${n} produits — recherche locale prioritaire`
     : 'Aucune base locale — recherche via APIs en ligne';
 }
 function applyBase(obj){
@@ -1181,7 +1232,7 @@ function loadBase(input){
     try{
       const n = applyBase(JSON.parse(e.target.result));
       try{ localStorage.setItem(BASE_KEY, JSON.stringify(PROD_BASE)); }catch(err){ toast('Base chargée mais trop volumineuse pour la mémoire du téléphone', 'red'); }
-      toast(`📦 Base chargée — ${n} produits`, 'green');
+      toast(`Base chargée — ${n} produits`, 'green');
     }catch(err){
       toast('Erreur base : ' + err.message, 'red');
     }
@@ -1201,11 +1252,11 @@ function loadBaseFromStorage(){
 // ════════════════════════════════════════
 const TOUR_STEPS = [
   {
-    text: "Bienvenue sur le scanner Merchi 👋 Cette visite guidée montre comment scanner un rayon, avec un meuble et des produits fictifs — rien n'est enregistré.",
+    text: "Bienvenue sur le scanner Merchi. Cette visite guidée montre comment scanner un rayon, avec un meuble et des produits fictifs — rien n'est enregistré.",
     run: () => {},
   },
   {
-    text: "Le type de meuble (Mural) et son numéro sont choisis, puis validés : un meuble M-DEMO est créé avec ses dimensions par défaut (modifiables ensuite via 📏 Taille).",
+    text: "Le type de meuble (Mural) et son numéro sont choisis, puis validés : un meuble M-DEMO est créé avec ses dimensions par défaut (modifiables ensuite via le bouton Taille).",
     run: () => {
       hide('welcome');
       openType();
@@ -1251,7 +1302,7 @@ const TOUR_STEPS = [
     run: () => { finishPlateau(); },
   },
   {
-    text: "Le badge 📋 en haut liste tous les produits scannés. On peut sauvegarder en cours de route, ou exporter le fichier final une fois le meuble terminé.",
+    text: "Le badge compteur en haut liste tous les produits scannés. On peut sauvegarder en cours de route, ou exporter le fichier final une fois le meuble terminé.",
     run: () => { showList(); },
   },
   {
@@ -1312,6 +1363,7 @@ function tourEnd(){
   $('welcome').style.display = 'flex';
   try{ localStorage.setItem(TOUR_KEY, '1'); }catch(e){}
   toast('Visite terminée — à toi de jouer !', 'green');
+  maybeAutoShowInstall();
 }
 
 function maybeAutoStartTour(){
@@ -1341,7 +1393,7 @@ function checkAccess(){
 function renderAccessStatus(){
   const el = $('access-status');
   if(!el) return;
-  el.innerHTML = `✅ ${ACCESS_OFFICINE} — ${ACCESS_PRENOM} · <a href="#" onclick="resetAccess();return false;" style="color:var(--gold)">changer</a>`;
+  el.innerHTML = `${ic('check',13)} ${ACCESS_OFFICINE} — ${ACCESS_PRENOM} · <a href="#" onclick="resetAccess();return false;" style="color:var(--gold)">changer</a>`;
 }
 function resetAccess(){
   try{ localStorage.removeItem(ACCESS_KEY); }catch(e){}
@@ -1367,7 +1419,48 @@ function initAfterAccess(){
   renderAccessStatus();
   loadBaseFromStorage();
   restoreSession();
+  const tourWillStart = !localStorage.getItem(TOUR_KEY) && scanned.length === 0 && !M.type;
   maybeAutoStartTour();
+  if(!tourWillStart) maybeAutoShowInstall();
+}
+
+// ════════════════════════════════════════
+// INSTALLATION SUR L'ÉCRAN D'ACCUEIL (PWA)
+// ════════════════════════════════════════
+function isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+function installSteps(){
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if(isIOS){
+    return `
+      <div class="install-step"><div class="install-num">1</div><div>Appuie sur ${ic('upload',14)} <b>Partager</b>, en bas de l'écran</div></div>
+      <div class="install-step"><div class="install-num">2</div><div>Cherche ${ic('phone',14)} <b>Sur l'écran d'accueil</b> et appuie dessus</div></div>
+      <div class="install-step"><div class="install-num">3</div><div>Appuie sur ${ic('check',14)} <b>Ajouter</b></div></div>
+    `;
+  }
+  return `
+    <div class="install-step"><div class="install-num">1</div><div>Appuie sur les <b>⋮ trois points</b>, en haut de l'écran</div></div>
+    <div class="install-step"><div class="install-num">2</div><div>Cherche ${ic('phone',14)} <b>Ajouter à l'écran d'accueil</b> et appuie dessus</div></div>
+    <div class="install-step"><div class="install-num">3</div><div>Appuie sur ${ic('check',14)} <b>Ajouter</b></div></div>
+  `;
+}
+function openInstallModal(){
+  $('install-steps').innerHTML = isStandalone()
+    ? `<div class="install-ok">${ic('check',20)}<br>Déjà installée sur ton téléphone !<br>Tes scans sont en sécurité.</div>`
+    : installSteps();
+  openModal('modal-install');
+}
+function closeInstallModal(){
+  closeModal('modal-install');
+  try{ localStorage.setItem(INSTALL_KEY, '1'); }catch(e){}
+}
+function maybeAutoShowInstall(){
+  try{
+    if(isStandalone()) return;
+    if(localStorage.getItem(INSTALL_KEY)) return;
+    setTimeout(openInstallModal, 600);
+  }catch(e){}
 }
 
 if(checkAccess()){
