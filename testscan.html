@@ -570,8 +570,18 @@ function vibrate(p){if(navigator.vibrate)navigator.vibrate(p);}
 // ════════════════════════════════════════
 let audioCtx = null;
 function initAudio(){
-  if(audioCtx) return;
-  try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){}
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ return; }
+  }
+  if(audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+  // Débloque définitivement le son sur iOS : joue un buffer silencieux dans le même geste utilisateur
+  try{
+    const buffer = audioCtx.createBuffer(1, 1, 22050);
+    const src = audioCtx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(audioCtx.destination);
+    src.start(0);
+  }catch(e){}
 }
 function beep(){
   if(!audioCtx) return;
@@ -854,6 +864,7 @@ function refreshScanBtn(){
 // CAMÉRA
 // ════════════════════════════════════════
 function openCamera(){
+  initAudio();
   if(!M.type || !M.plateauActif){toast('Choisis un plateau', 'red'); return;}
   $('cam-info').textContent = `${baseKey()} · Plateau ${M.plateauActif}`;
   $('cam-info-sub').textContent = `${countCurrent()} déjà scannés`;
