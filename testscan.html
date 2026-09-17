@@ -1532,7 +1532,10 @@ function restoreSession(){
     const savedAt = session.saved_at ? new Date(session.saved_at).toLocaleString('fr-FR') : 'date inconnue';
     const resume = confirm(`Une session non exportée a été trouvée (${session.produits.length} produits, ${savedAt}).\n\nRestaurer les données ?`);
     if(!resume){
-      localStorage.removeItem(SESSION_KEY);
+      // Ne JAMAIS supprimer ici — juste ne pas la charger maintenant. Elle
+      // reste sur le téléphone, ré-proposée au prochain lancement, jusqu'à
+      // ce qu'un choix explicite (Effacer) la supprime vraiment.
+      toast('Session conservée — reproposée au prochain lancement', '');
       return;
     }
     scanned = session.produits;
@@ -1545,7 +1548,10 @@ function restoreSession(){
     $('btn-dims').disabled = !M.type;
     toast(`${scanned.length} produits restaurés`, 'green');
   }catch(err){
-    localStorage.removeItem(SESSION_KEY);
+    // Ne pas supprimer sur erreur : la donnée brute reste sur le téléphone
+    // même si elle n'a pas pu être interprétée cette fois — mieux vaut
+    // un problème à examiner plus tard qu'une perte de données définitive.
+    console.error('Erreur restauration session :', err);
   }
 }
 
