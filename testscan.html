@@ -125,6 +125,8 @@ input:focus{outline:none;border-color:var(--teal)}
 .btn-green{background:var(--green);color:#fff}
 .btn-outline{background:#fff;color:var(--teal);border:1.5px solid var(--teal)}
 .btn-gray{background:#eee;color:#555}
+.btn-close-big{background:#fce4ec;color:#c62828;font-size:15px!important;font-weight:800!important;padding:11px 20px!important;border-radius:12px;transition:transform .12s,background .12s}
+.btn-close-big:active{background:#f8bbd0;transform:scale(.94)}
 
 /* ─── CAMÉRA PLEIN ÉCRAN ─── */
 .cam-overlay{position:fixed;inset:0;background:#000;z-index:300;display:none;flex-direction:column}
@@ -510,7 +512,7 @@ input:focus{outline:none;border-color:var(--teal)}
           <div class="modal-title" style="margin:0">Produits scannés</div>
           <div class="modal-sub" style="margin:4px 0 0" id="list-sub">0</div>
         </div>
-        <button class="btn btn-gray" style="width:auto;padding:9px 16px;font-size:13px;font-weight:700" onclick="closeModal('modal-list')">✕ Fermer</button>
+        <button class="btn btn-close-big" style="width:auto" onclick="closeModal('modal-list')">✕ Fermer</button>
       </div>
     </div>
     <div class="list-body" id="list-body"></div>
@@ -536,7 +538,7 @@ input:focus{outline:none;border-color:var(--teal)}
           <div class="modal-title" style="margin:0">Photos en attente</div>
           <div class="modal-sub" style="margin:4px 0 0" id="photos-list-sub">0</div>
         </div>
-        <button class="btn btn-gray" style="width:auto;padding:9px 16px;font-size:13px;font-weight:700" onclick="closeModal('modal-photos')">✕ Fermer</button>
+        <button class="btn btn-close-big" style="width:auto" onclick="closeModal('modal-photos')">✕ Fermer</button>
       </div>
     </div>
     <div class="list-body" id="photos-list-body"></div>
