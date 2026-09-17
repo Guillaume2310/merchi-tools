@@ -72,7 +72,7 @@ body{font-family:system-ui,Arial,sans-serif;background:#1a1a1a;color:#fff;font-s
 /* ─── MODAL ─── */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none;align-items:flex-end}
 .modal-bg.show{display:flex}
-#modal-product,#modal-ean,#modal-photo{z-index:400}
+#modal-product,#modal-ean,#modal-photo,#modal-edit{z-index:400}
 .modal{background:#fff;color:#1a1a1a;width:100%;border-top-left-radius:18px;border-top-right-radius:18px;padding:18px 18px calc(24px + env(safe-area-inset-bottom));animation:slideUp .25s;max-height:80vh;overflow-y:auto}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .modal-handle{width:40px;height:4px;background:#ddd;border-radius:2px;margin:-10px auto 14px}
@@ -469,6 +469,37 @@ input:focus{outline:none;border-color:var(--teal)}
   </div>
 </div>
 
+<!-- ─── MODAL ÉDITION PRODUIT ─── -->
+<div class="modal-bg" id="modal-edit">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Modifier le produit</div>
+    <div class="modal-sub" id="edit-confirmation"></div>
+    <div class="dims-grid">
+      <div style="grid-column:1 / -1">
+        <div class="id-lbl">Nom</div>
+        <input type="text" id="inp-edit-nom">
+      </div>
+      <div style="grid-column:1 / -1">
+        <div class="id-lbl">Marque</div>
+        <input type="text" id="inp-edit-marque">
+      </div>
+      <div>
+        <div class="id-lbl">Prix vente TTC (€)</div>
+        <input type="number" id="inp-edit-prix" min="0" step="0.01" inputmode="decimal">
+      </div>
+      <div>
+        <div class="id-lbl">Facings</div>
+        <input type="number" id="inp-edit-facings" min="1" step="1" inputmode="numeric">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-gray" onclick="closeModal('modal-edit')">Annuler</button>
+      <button class="btn btn-teal" onclick="confirmerEdit()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── MODAL LISTE ─── -->
 <div class="modal-bg" id="modal-list">
   <div class="modal list-modal">
@@ -479,7 +510,7 @@ input:focus{outline:none;border-color:var(--teal)}
           <div class="modal-title" style="margin:0">Produits scannés</div>
           <div class="modal-sub" style="margin:4px 0 0" id="list-sub">0</div>
         </div>
-        <button class="btn btn-gray" style="width:auto;padding:6px 12px;font-size:12px" onclick="closeModal('modal-list')">✕</button>
+        <button class="btn btn-gray" style="width:auto;padding:9px 16px;font-size:13px;font-weight:700" onclick="closeModal('modal-list')">✕ Fermer</button>
       </div>
     </div>
     <div class="list-body" id="list-body"></div>
@@ -505,7 +536,7 @@ input:focus{outline:none;border-color:var(--teal)}
           <div class="modal-title" style="margin:0">Photos en attente</div>
           <div class="modal-sub" style="margin:4px 0 0" id="photos-list-sub">0</div>
         </div>
-        <button class="btn btn-gray" style="width:auto;padding:6px 12px;font-size:12px" onclick="closeModal('modal-photos')">✕</button>
+        <button class="btn btn-gray" style="width:auto;padding:9px 16px;font-size:13px;font-weight:700" onclick="closeModal('modal-photos')">✕ Fermer</button>
       </div>
     </div>
     <div class="list-body" id="photos-list-body"></div>
@@ -1605,7 +1636,7 @@ function showList(){
         <div class="list-group-title">${g.key} · Plateau ${g.plateau} <span class="list-group-count">${g.items.length}</span></div>
         ${g.items.map(p => `<div class="list-item">
           <span class="list-tag">${p.source==='inconnu'?'?':p.source==='local'?'L':p.source==='OBF'?'B':p.source==='OFF'?'F':'M'}</span>
-          <div class="list-info">
+          <div class="list-info" style="cursor:pointer" onclick="ouvrirEdit('${p.ean}','${p.key}','${p.plateau}')">
             <div class="list-nom">${p.nom}</div>
             <div class="list-ean">${p.ean}${p.marque?' · '+p.marque:''} · ${Number(p.prix_vente_ttc || 0).toFixed(2)} € TTC · ×${p.nb_facings || 1}</div>
           </div>
@@ -1625,6 +1656,37 @@ function removeOne(ean, key, pl){
   refreshCount();
   refreshVisual();
   showList();
+}
+
+let editingRef = null;
+function ouvrirEdit(ean, key, plateau){
+  const p = scanned.find(x => x.ean===ean && x.key===key && x.plateau===plateau);
+  if(!p) return;
+  editingRef = {ean, key, plateau};
+  $('edit-confirmation').textContent = `${key} · Plateau ${plateau} · ${ean}`;
+  $('inp-edit-nom').value = p.nom || '';
+  $('inp-edit-marque').value = p.marque || '';
+  $('inp-edit-prix').value = p.prix_vente_ttc || '';
+  $('inp-edit-facings').value = p.nb_facings || 1;
+  openModal('modal-edit');
+}
+function confirmerEdit(){
+  if(!editingRef) return;
+  const p = scanned.find(x => x.ean===editingRef.ean && x.key===editingRef.key && x.plateau===editingRef.plateau);
+  if(!p){ closeModal('modal-edit'); return; }
+  const prix = Number.parseFloat($('inp-edit-prix').value.replace(',', '.'));
+  const facings = Number.parseInt($('inp-edit-facings').value, 10);
+  if(!Number.isFinite(prix) || prix < 0){ toast('Prix invalide', 'red'); return; }
+  if(!Number.isInteger(facings) || facings < 1){ toast('Facings invalides', 'red'); return; }
+  p.nom = $('inp-edit-nom').value.trim() || p.nom;
+  p.marque = $('inp-edit-marque').value.trim();
+  p.prix_vente_ttc = Math.round(prix * 100) / 100;
+  p.nb_facings = facings;
+  saveSession();
+  editingRef = null;
+  closeModal('modal-edit');
+  showList();
+  toast('Produit modifié', 'green');
 }
 
 function clearAll(){
