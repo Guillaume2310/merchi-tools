@@ -194,6 +194,7 @@ input:focus{outline:none;border-color:var(--teal)}
 .list-nom{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#333}
 .list-ean{font-family:monospace;font-size:10px;color:#aaa}
 .list-del{background:none;border:none;font-size:20px;color:#ccc;cursor:pointer;padding:0 6px}
+.photo-thumb{width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0;background:#eee}
 .list-del:active{color:var(--red)}
 
 /* ─── TOAST ─── */
@@ -479,17 +480,35 @@ input:focus{outline:none;border-color:var(--teal)}
       </div>
     </div>
     <div class="list-body" id="list-body"></div>
-    <div id="photo-pending-bar" style="display:none;padding:10px 14px;background:#fff8e1;border-top:1px solid #eee;align-items:center;justify-content:space-between;gap:10px">
+    <div id="photo-pending-bar" style="display:none;padding:10px 14px;background:#fff8e1;border-top:1px solid #eee;align-items:center;justify-content:space-between;gap:10px;cursor:pointer" onclick="showPhotoList()">
       <span style="font-size:12.5px;color:#7a5c00" id="photo-pending-txt">0 photo(s) en attente de décodage</span>
-      <div style="display:flex;gap:6px;flex:none">
-        <button class="btn btn-outline" style="flex:none;padding:8px 12px;font-size:12px" onclick="exporterPhotos()">Exporter</button>
-        <button class="btn" style="flex:none;padding:8px 10px;font-size:12px;background:#fce4ec;color:#c62828" onclick="viderPhotos()" title="Supprimer les photos en attente"><svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13"/><path d="M10 11v6M14 11v6"/></svg></button>
-      </div>
+      <span style="font-size:12px;color:#7a5c00;font-weight:700;flex:none">Gérer →</span>
     </div>
     <div style="padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:#fff;display:flex;gap:8px;border-top:1px solid #eee">
       <button class="btn" style="background:#fce4ec;color:#c62828" onclick="clearAll()"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13"/><path d="M10 11v6M14 11v6"/></svg> Effacer</button>
       <button class="btn btn-outline" onclick="saveSessionManually()"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z"/><path d="M8 4v5h7V4"/><path d="M8 21v-6h8v6"/></svg> Sauver</button>
       <button class="btn btn-green" onclick="exportData()"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/></svg> Exporter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL PHOTOS EN ATTENTE ─── -->
+<div class="modal-bg" id="modal-photos">
+  <div class="modal list-modal">
+    <div class="modal-handle" style="margin-top:8px"></div>
+    <div class="list-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="modal-title" style="margin:0">Photos en attente</div>
+          <div class="modal-sub" style="margin:4px 0 0" id="photos-list-sub">0</div>
+        </div>
+        <button class="btn btn-gray" style="width:auto;padding:6px 12px;font-size:12px" onclick="closeModal('modal-photos')">✕</button>
+      </div>
+    </div>
+    <div class="list-body" id="photos-list-body"></div>
+    <div style="padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:#fff;display:flex;gap:8px;border-top:1px solid #eee">
+      <button class="btn" style="background:#fce4ec;color:#c62828" onclick="viderPhotos()"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13"/><path d="M10 11v6M14 11v6"/></svg> Tout supprimer</button>
+      <button class="btn btn-green" onclick="exporterPhotos()"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/></svg> Exporter tout</button>
     </div>
   </div>
 </div>
@@ -1204,6 +1223,44 @@ async function clearPhotoRecords(){
     tx.onerror = () => reject(tx.error);
   });
 }
+async function deletePhotoRecord(id){
+  const db = await openPhotoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('photos', 'readwrite');
+    tx.objectStore('photos').delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function showPhotoList(){
+  const body = $('photos-list-body');
+  let all;
+  try{ all = await getAllPhotoRecords(); }catch(e){ toast('Erreur de lecture des photos', 'red'); return; }
+  all.sort((a, b) => a.nomFichier.localeCompare(b.nomFichier));
+
+  if(all.length === 0){
+    body.innerHTML = '<div style="text-align:center;color:#aaa;padding:40px;font-style:italic">Aucune photo en attente</div>';
+  } else {
+    body.innerHTML = all.map(p => `
+      <div class="list-item">
+        <img class="photo-thumb" src="${URL.createObjectURL(p.blob)}" alt="">
+        <div class="list-info">
+          <div class="list-nom">${p.meuble} · Plateau ${p.plateau} · ×${p.facings}</div>
+          <div class="list-ean">${p.nomFichier}</div>
+        </div>
+        <button class="list-del" onclick="supprimerUnePhoto('${p.id}')">✕</button>
+      </div>`).join('');
+  }
+  $('photos-list-sub').textContent = `${all.length} photo${all.length>1?'s':''} en attente`;
+  openModal('modal-photos');
+}
+
+async function supprimerUnePhoto(id){
+  try{ await deletePhotoRecord(id); }catch(e){ toast('Erreur de suppression', 'red'); return; }
+  showPhotoList();
+  refreshPhotoBar();
+}
 
 async function capturerPhotoEtiquette(){
   const video = document.querySelector('#cam-video-wrap video');
@@ -1267,6 +1324,7 @@ async function viderPhotos(){
   try{ await clearPhotoRecords(); }catch(e){ toast('Erreur de suppression', 'red'); return; }
   toast('Photos supprimées', 'green');
   refreshPhotoBar();
+  showPhotoList();
 }
 
 async function exporterPhotos(){
