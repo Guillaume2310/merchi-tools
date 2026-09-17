@@ -1794,9 +1794,9 @@ function renderEnvoiStatus(){
   if(!bar) return;
   if(!dernierEnvoiStatut){ bar.style.display = 'none'; return; }
   const {etat, texte, heure} = dernierEnvoiStatut;
-  const couleurs = {ok: ['#e8f5e9', '#2e7d32'], ko: ['#ffebee', '#c62828'], attente: ['#e3f2fd', '#1565c0']};
+  const couleurs = {ok: ['#e8f5e9', '#2e7d32'], ko: ['#ffebee', '#c62828'], incertain: ['#fff8e1', '#e65100'], attente: ['#e3f2fd', '#1565c0']};
   const [bg, fg] = couleurs[etat] || couleurs.attente;
-  const icone = etat === 'ok' ? '✓' : etat === 'ko' ? '✕' : '…';
+  const icone = etat === 'ok' ? '✓' : etat === 'ko' ? '✕' : etat === 'incertain' ? '⚠' : '…';
   bar.style.display = 'flex';
   bar.style.background = bg;
   bar.style.color = fg;
@@ -1826,8 +1826,8 @@ async function envoyerExportParEmail(json, nomFichier, data){
       messageAlerte = "✕ ÉCHEC DE L'ENVOI\n\nL'email n'a pas pu être envoyé. Le fichier reste téléchargé sur le téléphone — préviens Guillaume.";
     }
   }catch(e){
-    setEnvoiStatus('ko', 'Pas de connexion — fichier téléchargé quand même');
-    messageAlerte = "✕ PAS DE CONNEXION\n\nL'email n'a pas pu être envoyé (pas de réseau). Le fichier reste téléchargé sur le téléphone — réessaie plus tard ou préviens Guillaume.";
+    setEnvoiStatus('incertain', 'Envoi incertain — vérifie ta boîte mail');
+    messageAlerte = "⚠️ ENVOI INCERTAIN\n\nLa connexion a été coupée avant la confirmation — mais l'email est peut-être quand même parti. Vérifie la boîte mail avant de renvoyer. Le fichier reste téléchargé sur le téléphone dans tous les cas.";
   }
   exportEnCours = false;
   const btn = $('btn-export'), btnTxt = $('btn-export-txt');
