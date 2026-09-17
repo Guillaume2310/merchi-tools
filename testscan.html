@@ -445,9 +445,12 @@ input:focus{outline:none;border-color:var(--teal)}
     <div class="modal-handle"></div>
     <div class="modal-title">Valider le produit</div>
     <div class="modal-sub" id="product-confirmation">EAN détecté</div>
-    <div style="background:#f7f5f0;border-radius:9px;padding:10px 12px;margin-bottom:14px;color:#333">
-      <div id="product-confirm-name" style="font-weight:700"></div>
-      <div id="product-confirm-ean" style="font-family:monospace;font-size:11px;color:#888;margin-top:3px"></div>
+    <div style="background:#f7f5f0;border-radius:9px;padding:10px 12px;margin-bottom:14px;color:#333;display:flex;gap:10px;align-items:center">
+      <img id="product-confirm-img" style="display:none;width:52px;height:52px;object-fit:contain;border-radius:7px;background:#fff;flex-shrink:0" alt="">
+      <div style="min-width:0;flex:1">
+        <div id="product-confirm-name" style="font-weight:700"></div>
+        <div id="product-confirm-ean" style="font-family:monospace;font-size:11px;color:#888;margin-top:3px"></div>
+      </div>
     </div>
     <div class="dims-grid">
       <div>
@@ -1156,16 +1159,17 @@ async function lookupEAN(ean){
   // 1) Base locale (produits_reference.json) — prioritaire, instantanée, hors-ligne
   const local = PROD_BASE[ean];
   if(local && (local.nom || local.marque)){
-    return {nom: local.nom || '', marque: local.marque || '', source:'local'};
+    return {nom: local.nom || '', marque: local.marque || '', source:'local', image: local.image || ''};
   }
-  // 2) APIs publiques en cascade
+  // 2) APIs publiques en cascade (contiennent souvent une photo produit)
   try{
     const r = await fetch(`https://world.openbeautyfacts.org/api/v0/product/${ean}.json`, {signal:AbortSignal.timeout(3500)});
     const d = await r.json();
     if(d.status === 1 && d.product){
       const nom = d.product.product_name_fr || d.product.product_name || '';
       const marque = d.product.brands || '';
-      if(nom) return {nom, marque, source:'OBF'};
+      const image = d.product.image_front_small_url || d.product.image_url || '';
+      if(nom) return {nom, marque, source:'OBF', image};
     }
   }catch(e){}
   try{
@@ -1174,10 +1178,11 @@ async function lookupEAN(ean){
     if(d.status === 1 && d.product){
       const nom = d.product.product_name_fr || d.product.product_name || '';
       const marque = d.product.brands || '';
-      if(nom) return {nom, marque, source:'OFF'};
+      const image = d.product.image_front_small_url || d.product.image_url || '';
+      if(nom) return {nom, marque, source:'OFF', image};
     }
   }catch(e){}
-  return {nom:'', marque:'', source:'inconnu'};
+  return {nom:'', marque:'', source:'inconnu', image:''};
 }
 
 // ════════════════════════════════════════
@@ -1463,6 +1468,9 @@ async function onEanDetected(ean, format){
     source: info.source,
     key: k, plateau: M.plateauActif,
   };
+  const img = $('product-confirm-img');
+  if(info.image){ img.src = info.image; img.style.display = 'block'; }
+  else { img.style.display = 'none'; img.src = ''; }
   $('product-confirm-name').textContent = pendingProduct.nom;
   $('product-confirm-ean').textContent = `${format ? `[${format}] ` : ''}${ean}${pendingProduct.marque ? ` · ${pendingProduct.marque}` : ''}`;
   $('product-confirmation').textContent = `${k} · Plateau ${M.plateauActif}`;
