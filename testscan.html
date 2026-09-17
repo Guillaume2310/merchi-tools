@@ -1064,7 +1064,16 @@ async function onEanDetected(ean){
   if(processingEan) return;
   const k = baseKey();
   const dup = scanned.find(p => p.ean===ean && p.key===k && p.plateau===M.plateauActif);
-  if(dup){toast('Déjà scanné ✓'); return;}
+  if(dup){
+    const garder = confirm(`${dup.nom}\nDéjà scanné sur ce plateau (×${dup.nb_facings || 1} facing${(dup.nb_facings||1)>1?'s':''}).\n\nAjouter un facing supplémentaire ?`);
+    if(garder){
+      dup.nb_facings = (dup.nb_facings || 1) + 1;
+      saveSession();
+      refreshCount();
+      toast(`${dup.nom} : ×${dup.nb_facings}`, 'green');
+    }
+    return;
+  }
 
   processingEan = true;
   vibrate(60);
