@@ -201,6 +201,7 @@ input:focus{outline:none;border-color:var(--teal)}
 
 /* ─── TOAST ─── */
 .toast{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-100px);background:rgba(0,0,0,.88);color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;transition:.2s;z-index:400;pointer-events:none;max-width:90%;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.toast.show{pointer-events:auto;cursor:pointer}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.green{background:var(--green)}
 .toast.red{background:var(--red)}
@@ -551,7 +552,7 @@ input:focus{outline:none;border-color:var(--teal)}
 </div>
 
 <!-- TOAST -->
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" onclick="this.classList.remove('show')"></div>
 
 <!-- VISITE GUIDÉE -->
 <div class="tour-caption" id="tour-caption"></div>
@@ -695,13 +696,21 @@ function toast(msg, type=''){
 // Filet de sécurité : si l'app a été mise en arrière-plan (minuteries mises
 // en pause par le téléphone), le message peut rester bloqué à l'écran au
 // retour — on le referme s'il traîne depuis trop longtemps.
-document.addEventListener('visibilitychange', () => {
-  if(document.visibilityState === 'visible' && toastShownAt && Date.now() - toastShownAt > 1700){
+function purgerToastBloque(){
+  if(toastShownAt && Date.now() - toastShownAt > 1700){
     const t = $('toast');
     t.classList.remove('show');
     if(toastTimer){ clearTimeout(toastTimer); toastTimer = null; }
+    toastShownAt = 0;
   }
+}
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible') purgerToastBloque();
 });
+// N'importe quelle interaction referme aussi un message resté bloqué trop
+// longtemps (au cas où le minuteur JS a été suspendu par le téléphone).
+document.addEventListener('click', purgerToastBloque, true);
+document.addEventListener('touchstart', purgerToastBloque, true);
 
 // ════════════════════════════════════════
 // MODAL HELPERS
