@@ -1664,6 +1664,39 @@ function exportData(){
 // ════════════════════════════════════════
 // BASE LOCALE PRODUITS (produits_reference.json)
 // ════════════════════════════════════════
+// Stockée dans IndexedDB (pas localStorage) : la base fait plusieurs
+// centaines de Ko à quelques Mo, et localStorage a un quota total très
+// limité sur mobile (partagé avec la session en cours) — un dépassement
+// silencieux faisait perdre la base au moindre rechargement de page
+// (ex. app suspendue par iOS pendant un appel téléphonique).
+const KV_DB_NAME = 'merchi_kv_v1';
+function openKvDB(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(KV_DB_NAME, 1);
+    req.onupgradeneeded = () => { req.result.createObjectStore('kv'); };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function kvSet(key, value){
+  const db = await openKvDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('kv', 'readwrite');
+    tx.objectStore('kv').put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function kvGet(key){
+  const db = await openKvDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('kv', 'readonly');
+    const req = tx.objectStore('kv').get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
 function setBaseStatus(n){
   const st = $('base-status');
   if(!st) return;
@@ -1684,10 +1717,15 @@ function loadBase(input){
   const file = input.files[0];
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     try{
       const n = applyBase(JSON.parse(e.target.result));
-      try{ localStorage.setItem(BASE_KEY, JSON.stringify(PROD_BASE)); }catch(err){ toast('Base chargée mais trop volumineuse pour la mémoire du téléphone', 'red'); }
+      try{
+        await kvSet('prod_base', PROD_BASE);
+        try{ localStorage.removeItem(BASE_KEY); }catch(err){}
+      }catch(err){
+        toast('Base chargée mais impossible à sauvegarder — recharge-la si tu quittes l\'appli', 'red');
+      }
       toast(`Base chargée — ${n} produits`, 'green');
     }catch(err){
       toast('Erreur base : ' + err.message, 'red');
@@ -1696,10 +1734,18 @@ function loadBase(input){
   reader.readAsText(file);
   input.value = '';
 }
-function loadBaseFromStorage(){
+async function loadBaseFromStorage(){
+  try{
+    const stored = await kvGet('prod_base');
+    if(stored){ applyBase(stored); return; }
+  }catch(e){}
+  // Repli : ancienne sauvegarde localStorage (avant migration IndexedDB)
   try{
     const raw = localStorage.getItem(BASE_KEY);
-    if(raw) applyBase(JSON.parse(raw));
+    if(raw){
+      applyBase(JSON.parse(raw));
+      kvSet('prod_base', PROD_BASE).catch(()=>{});
+    }
   }catch(e){}
 }
 
