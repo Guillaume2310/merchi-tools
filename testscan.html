@@ -481,7 +481,10 @@ input:focus{outline:none;border-color:var(--teal)}
     <div class="list-body" id="list-body"></div>
     <div id="photo-pending-bar" style="display:none;padding:10px 14px;background:#fff8e1;border-top:1px solid #eee;align-items:center;justify-content:space-between;gap:10px">
       <span style="font-size:12.5px;color:#7a5c00" id="photo-pending-txt">0 photo(s) en attente de décodage</span>
-      <button class="btn btn-outline" style="flex:none;padding:8px 12px;font-size:12px" onclick="exporterPhotos()">Exporter</button>
+      <div style="display:flex;gap:6px;flex:none">
+        <button class="btn btn-outline" style="flex:none;padding:8px 12px;font-size:12px" onclick="exporterPhotos()">Exporter</button>
+        <button class="btn" style="flex:none;padding:8px 10px;font-size:12px;background:#fce4ec;color:#c62828" onclick="viderPhotos()" title="Supprimer les photos en attente"><svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13"/><path d="M10 11v6M14 11v6"/></svg></button>
+      </div>
     </div>
     <div style="padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:#fff;display:flex;gap:8px;border-top:1px solid #eee">
       <button class="btn" style="background:#fce4ec;color:#c62828" onclick="clearAll()"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13"/><path d="M10 11v6M14 11v6"/></svg> Effacer</button>
@@ -1254,6 +1257,16 @@ async function refreshPhotoBar(){
     bar.style.display = 'flex';
     txt.textContent = `${all.length} photo${all.length>1?'s':''} en attente de décodage`;
   }catch(e){}
+}
+
+async function viderPhotos(){
+  let all;
+  try{ all = await getAllPhotoRecords(); }catch(e){ toast('Erreur de lecture des photos', 'red'); return; }
+  if(!all || all.length === 0) return;
+  if(!confirm(`Supprimer les ${all.length} photo(s) en attente ?\n\nAssure-toi de les avoir déjà exportées si besoin — cette action est définitive.`)) return;
+  try{ await clearPhotoRecords(); }catch(e){ toast('Erreur de suppression', 'red'); return; }
+  toast('Photos supprimées', 'green');
+  refreshPhotoBar();
 }
 
 async function exporterPhotos(){
