@@ -5,11 +5,10 @@
 // et l'envoie automatiquement par email (via Resend) à
 // fichierpara@merchi-pharma.fr, en pièce jointe.
 //
-// Nécessite un binding "Secrets Store" nommé RESEND_API_KEY, configuré
-// dans Cloudflare : Workers & Pages → merchi-tools → Bindings → Add →
-// Secrets Store → RESEND_API_KEY (voir secrets_store_secrets dans
-// wrangler.jsonc). Ce type de binding s'utilise avec .get() (async),
-// pas comme une simple variable texte.
+// Nécessite un secret RESEND_API_KEY défini via :
+//   npx wrangler secret put RESEND_API_KEY
+// (méthode CLI classique — indépendante de l'interface "Secrets Store"
+// du dashboard, qui n'a pas fonctionné de manière fiable)
 
 const DESTINATAIRE = "fichierpara@merchi-pharma.fr";
 
@@ -34,15 +33,7 @@ async function envoyerInventaire(request, env) {
   if (!env.RESEND_API_KEY) {
     return new Response(JSON.stringify({ error: "RESEND_API_KEY non configurée côté serveur" }), { status: 500, headers: cors });
   }
-  let resendApiKey;
-  try {
-    resendApiKey = await env.RESEND_API_KEY.get();
-  } catch (e) {
-    return new Response(JSON.stringify({ error: "Lecture du secret RESEND_API_KEY impossible", detail: e.message }), { status: 500, headers: cors });
-  }
-  if (!resendApiKey) {
-    return new Response(JSON.stringify({ error: "RESEND_API_KEY vide" }), { status: 500, headers: cors });
-  }
+  const resendApiKey = env.RESEND_API_KEY;
 
   let body;
   try {
