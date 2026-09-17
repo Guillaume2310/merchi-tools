@@ -1826,8 +1826,8 @@ async function envoyerExportParEmail(json, nomFichier, data){
       messageAlerte = "✕ ÉCHEC DE L'ENVOI\n\nL'email n'a pas pu être envoyé. Le fichier reste téléchargé sur le téléphone — préviens Guillaume.";
     }
   }catch(e){
-    setEnvoiStatus('incertain', 'Envoi incertain — vérifie ta boîte mail');
-    messageAlerte = "⚠️ ENVOI INCERTAIN\n\nLa connexion a été coupée avant la confirmation — mais l'email est peut-être quand même parti. Vérifie la boîte mail avant de renvoyer. Le fichier reste téléchargé sur le téléphone dans tous les cas.";
+    setEnvoiStatus('incertain', 'Envoi incertain — retape sur Exporter');
+    messageAlerte = "⚠️ ENVOI INCERTAIN\n\nLa connexion a coupé avant la confirmation. Retape simplement sur \"Exporter\" pour être sûr — pas de souci si ça part deux fois, mieux vaut ça qu'un fichier manquant.";
   }
   exportEnCours = false;
   const btn = $('btn-export'), btnTxt = $('btn-export-txt');
