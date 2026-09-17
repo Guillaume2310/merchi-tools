@@ -121,6 +121,7 @@ input:focus{outline:none;border-color:var(--teal)}
 
 .modal-actions{display:flex;gap:8px;margin-top:6px}
 .btn{padding:13px 16px;border-radius:10px;border:none;font-size:14px;font-weight:700;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn:disabled{opacity:.5;cursor:default}
 .btn-teal{background:var(--teal);color:#fff}
 .btn-green{background:var(--green);color:#fff}
 .btn-outline{background:#fff;color:var(--teal);border:1.5px solid var(--teal)}
@@ -525,7 +526,7 @@ input:focus{outline:none;border-color:var(--teal)}
     <div style="padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:#fff;display:flex;gap:8px;border-top:1px solid #eee">
       <button class="btn" style="background:#fce4ec;color:#c62828" onclick="clearAll()"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13"/><path d="M10 11v6M14 11v6"/></svg> Effacer</button>
       <button class="btn btn-outline" onclick="saveSessionManually()"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z"/><path d="M8 4v5h7V4"/><path d="M8 21v-6h8v6"/></svg> Sauver</button>
-      <button class="btn btn-green" onclick="exportData()"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/></svg> Exporter</button>
+      <button class="btn btn-green" id="btn-export" onclick="exportData()"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/></svg> <span id="btn-export-txt">Exporter</span></button>
     </div>
   </div>
 </div>
@@ -1730,8 +1731,14 @@ function clearAll(){
 // ════════════════════════════════════════
 // EXPORT
 // ════════════════════════════════════════
+let exportEnCours = false;
 function exportData(){
   if(scanned.length === 0){toast('Rien à exporter', 'red'); return;}
+  if(exportEnCours){toast('Envoi déjà en cours, patiente…', 'red'); return;}
+  exportEnCours = true;
+  const btn = $('btn-export'), btnTxt = $('btn-export-txt');
+  if(btn) btn.disabled = true;
+  if(btnTxt) btnTxt.textContent = 'Envoi…';
   const groups = {};
   scanned.forEach(p => {
     if(!groups[p.key]) groups[p.key] = {meuble: p.key, plateaux: {}};
@@ -1798,6 +1805,7 @@ function renderEnvoiStatus(){
 
 async function envoyerExportParEmail(json, nomFichier, data){
   setEnvoiStatus('attente', "Envoi de l'email en cours…");
+  let messageAlerte = '';
   try{
     const resp = await fetch('/api/envoyer-inventaire', {
       method: 'POST',
@@ -1812,15 +1820,20 @@ async function envoyerExportParEmail(json, nomFichier, data){
     });
     if(resp.ok){
       setEnvoiStatus('ok', 'Email envoyé avec succès');
-      toast('Envoyé par email', 'green');
+      messageAlerte = `✓ FICHIER ENVOYÉ\n\n${data.nb_total} produits envoyés par email avec succès.`;
     } else {
       setEnvoiStatus('ko', "Envoi email échoué — fichier téléchargé sur le téléphone");
-      toast('Envoi email échoué — le fichier reste téléchargé sur le téléphone', 'red');
+      messageAlerte = "✕ ÉCHEC DE L'ENVOI\n\nL'email n'a pas pu être envoyé. Le fichier reste téléchargé sur le téléphone — préviens Guillaume.";
     }
   }catch(e){
     setEnvoiStatus('ko', 'Pas de connexion — fichier téléchargé quand même');
-    toast('Pas de connexion — envoi email impossible, fichier téléchargé quand même', 'red');
+    messageAlerte = "✕ PAS DE CONNEXION\n\nL'email n'a pas pu être envoyé (pas de réseau). Le fichier reste téléchargé sur le téléphone — réessaie plus tard ou préviens Guillaume.";
   }
+  exportEnCours = false;
+  const btn = $('btn-export'), btnTxt = $('btn-export-txt');
+  if(btn) btn.disabled = false;
+  if(btnTxt) btnTxt.textContent = 'Exporter';
+  alert(messageAlerte);
 }
 
 // ════════════════════════════════════════
