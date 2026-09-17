@@ -10,7 +10,11 @@
 // (méthode CLI classique — indépendante de l'interface "Secrets Store"
 // du dashboard, qui n'a pas fonctionné de manière fiable)
 
-const DESTINATAIRE = "fichierpara@merchi-pharma.fr";
+// Temporaire : Resend (compte gratuit, domaine merchi-pharma.fr pas encore
+// vérifié) n'autorise l'envoi qu'à l'adresse du compte Resend lui-même.
+// Basculer vers fichierpara@merchi-pharma.fr une fois le domaine vérifié
+// sur resend.com/domains.
+const DESTINATAIRE = "guillaume.strateva@gmail.com";
 
 export default {
   async fetch(request, env) {
