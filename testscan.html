@@ -682,10 +682,12 @@ function beep(){
 document.addEventListener('click', initAudio, {once: true});
 document.addEventListener('touchend', initAudio, {once: true});
 
+let toastTimer = null;
 function toast(msg, type=''){
   const t = $('toast');
   t.textContent = msg; t.className = 'toast ' + type + ' show';
-  setTimeout(()=>t.classList.remove('show'), 1700);
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.remove('show'); toastTimer = null; }, 1700);
 }
 
 // ════════════════════════════════════════
