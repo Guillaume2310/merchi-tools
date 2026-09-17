@@ -1520,7 +1520,7 @@ function confirmProduct(){
   const facings = Number.parseInt($('inp-facings').value, 10);
   if(!Number.isFinite(prix) || prix < 0){toast('Saisis le prix de vente TTC', 'red'); return;}
   if(!Number.isInteger(facings) || facings < 1){toast('Les facings doivent être au moins à 1', 'red'); return;}
-  const nouveau = {...pendingProduct, prix_vente_ttc: Math.round(prix * 100) / 100, nb_facings: facings, source_prix: 'manuel', scanne_par: ACCESS_PRENOM || ''};
+  const nouveau = {...pendingProduct, prix_vente_ttc: Math.round(prix * 100) / 100, nb_facings: facings, source_prix: 'manuel', scanne_par: ACCESS_PRENOM || '', heure_scan: new Date().toISOString()};
   scanned.push(nouveau);
   addCamChip(nouveau, true);
   closeModal('modal-product');
@@ -1641,7 +1641,7 @@ function showList(){
           <span class="list-tag">${p.source==='inconnu'?'?':p.source==='local'?'L':p.source==='OBF'?'B':p.source==='OFF'?'F':'M'}</span>
           <div class="list-info" style="cursor:pointer" onclick="ouvrirEdit('${p.ean}','${p.key}','${p.plateau}')">
             <div class="list-nom">${p.nom}</div>
-            <div class="list-ean">${p.ean}${p.marque?' · '+p.marque:''} · ${Number(p.prix_vente_ttc || 0).toFixed(2)} € TTC · ×${p.nb_facings || 1}</div>
+            <div class="list-ean">${p.ean}${p.marque?' · '+p.marque:''} · ${Number(p.prix_vente_ttc || 0).toFixed(2)} € TTC · ×${p.nb_facings || 1}${p.heure_scan ? ' · ' + new Date(p.heure_scan).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : ''}</div>
           </div>
           <button class="list-del" onclick="removeOne('${p.ean}','${p.key}','${p.plateau}')">✕</button>
         </div>`).join('')}
@@ -1718,6 +1718,7 @@ function exportData(){
       source_prix: p.source_prix || 'manuel',
       nb_facings: p.nb_facings || 1,
       scanne_par: p.scanne_par || ACCESS_PRENOM || '',
+      heure_scan: p.heure_scan || '',
     });
   });
   const data = {
