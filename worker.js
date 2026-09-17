@@ -1,4 +1,4 @@
-// worker.js — Merchi
+// worker.js — Merchi (redeploy pour prise en compte du secret RESEND_API_KEY)
 // ─────────────────────────────────────────────────────────────
 // Sert le site statique (scanner) normalement, et ajoute un point
 // d'entrée /api/envoyer-inventaire qui reçoit un export du scanner
