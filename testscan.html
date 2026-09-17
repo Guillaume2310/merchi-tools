@@ -684,12 +684,24 @@ document.addEventListener('click', initAudio, {once: true});
 document.addEventListener('touchend', initAudio, {once: true});
 
 let toastTimer = null;
+let toastShownAt = 0;
 function toast(msg, type=''){
   const t = $('toast');
   t.textContent = msg; t.className = 'toast ' + type + ' show';
+  toastShownAt = Date.now();
   if(toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.classList.remove('show'); toastTimer = null; }, 1700);
 }
+// Filet de sécurité : si l'app a été mise en arrière-plan (minuteries mises
+// en pause par le téléphone), le message peut rester bloqué à l'écran au
+// retour — on le referme s'il traîne depuis trop longtemps.
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible' && toastShownAt && Date.now() - toastShownAt > 1700){
+    const t = $('toast');
+    t.classList.remove('show');
+    if(toastTimer){ clearTimeout(toastTimer); toastTimer = null; }
+  }
+});
 
 // ════════════════════════════════════════
 // MODAL HELPERS
