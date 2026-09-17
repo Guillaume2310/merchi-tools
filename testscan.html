@@ -1034,11 +1034,12 @@ async function startCamera(){
           focusMode: 'continuous',
         },
       },
-      (decodedText) => {
+      (decodedText, decodedResult) => {
         const now = Date.now();
         if(decodedText !== lastEan || now - lastEanTime > 2500){
           lastEan = decodedText; lastEanTime = now;
-          onEanDetected(decodedText);
+          const format = decodedResult?.result?.format?.formatName || '';
+          onEanDetected(decodedText, format);
         }
       },
       () => {}
@@ -1433,7 +1434,7 @@ async function lireNumeroEAN(){
 // ════════════════════════════════════════
 // AJOUT PRODUIT
 // ════════════════════════════════════════
-async function onEanDetected(ean){
+async function onEanDetected(ean, format){
   if(processingEan) return;
   const k = baseKey();
   const dup = scanned.find(p => p.ean===ean && p.key===k && p.plateau===M.plateauActif);
@@ -1452,7 +1453,7 @@ async function onEanDetected(ean){
   vibrate(60);
   beep();
   $('cam-status').textContent = `EAN ${ean}…`;
-  toast(ean, 'green');
+  toast(format ? `${format} · ${ean}` : ean, 'green');
 
   const info = await lookupEAN(ean);
   pendingProduct = {
@@ -1463,7 +1464,7 @@ async function onEanDetected(ean){
     key: k, plateau: M.plateauActif,
   };
   $('product-confirm-name').textContent = pendingProduct.nom;
-  $('product-confirm-ean').textContent = `${ean}${pendingProduct.marque ? ` · ${pendingProduct.marque}` : ''}`;
+  $('product-confirm-ean').textContent = `${format ? `[${format}] ` : ''}${ean}${pendingProduct.marque ? ` · ${pendingProduct.marque}` : ''}`;
   $('product-confirmation').textContent = `${k} · Plateau ${M.plateauActif}`;
   $('inp-prix-vente').value = '';
   $('inp-facings').value = '1';
