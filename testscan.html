@@ -163,11 +163,11 @@ input:focus{outline:none;border-color:var(--teal)}
 .cam-backdrop-dots{display:flex;gap:4px;flex-wrap:wrap;flex:1}
 .cam-backdrop-dot{width:8px;height:8px;border-radius:2px;background:var(--gold);flex-shrink:0;opacity:.85}
 .cam-fly-dot{position:fixed;width:14px;height:14px;border-radius:4px;background:var(--gold);box-shadow:0 0 12px var(--gold);z-index:500;pointer-events:none;transform:translate(0,0) scale(1);opacity:1;transition:transform .45s cubic-bezier(.3,.85,.4,1),opacity .45s ease-in .1s}
-.cam-bot{background:rgba(0,0,0,.7);padding:14px 16px calc(14px + env(safe-area-inset-bottom));padding-left:calc(16px + env(safe-area-inset-left));padding-right:calc(16px + env(safe-area-inset-right));display:flex;gap:8px;align-items:center}
-.cam-bot-info{flex:1;color:#fff}
+.cam-bot{background:rgba(0,0,0,.7);padding:14px 16px calc(14px + env(safe-area-inset-bottom));padding-left:calc(16px + env(safe-area-inset-left));padding-right:calc(16px + env(safe-area-inset-right));display:flex;gap:6px;align-items:center}
+.cam-bot-info{flex:0 1 auto;color:#fff;min-width:0}
 .cam-bot-count{font-size:24px;font-weight:700;color:var(--gold)}
 .cam-bot-lbl{font-size:11px;opacity:.7}
-.cam-bot-btn{background:#fff;color:var(--teal);border:none;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.cam-bot-btn{background:#fff;color:var(--teal);border:none;padding:10px 10px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .cam-bot-btn:disabled{opacity:.5;cursor:default}
 
 /* ─── LINÉAIRE EN DIRECT (bande de scan) ─── */
@@ -390,7 +390,8 @@ input:focus{outline:none;border-color:var(--teal)}
       <div class="cam-bot-lbl">scannés sur ce plateau</div>
     </div>
     <button class="cam-bot-btn" onclick="manualEan()">Saisir</button>
-    <button class="cam-bot-btn" id="btn-ocr" onclick="lireNumeroEAN()">Lire n°</button>
+    <button class="cam-bot-btn" id="btn-ocr" onclick="lireNumeroEAN()">Lire</button>
+    <button class="cam-bot-btn" onclick="capturerPhotoEtiquette()">Photo</button>
     <button class="cam-bot-btn" onclick="finishPlateau()">✓ OK</button>
   </div>
 </div>
@@ -405,6 +406,20 @@ input:focus{outline:none;border-color:var(--teal)}
     <div class="modal-actions">
       <button class="btn btn-gray" onclick="closeModal('modal-ean')">Annuler</button>
       <button class="btn btn-teal" onclick="addManual()">✓ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL PHOTO ÉTIQUETTE ─── -->
+<div class="modal-bg" id="modal-photo">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Photo enregistrée</div>
+    <div class="modal-sub">Nombre de facings — le code sera décodé plus tard</div>
+    <input type="tel" id="inp-photo-facings" value="1" inputmode="numeric">
+    <div class="modal-actions">
+      <button class="btn btn-gray" onclick="annulerPhoto()">Annuler</button>
+      <button class="btn btn-teal" onclick="confirmPhoto()">✓ Valider</button>
     </div>
   </div>
 </div>
@@ -464,6 +479,10 @@ input:focus{outline:none;border-color:var(--teal)}
       </div>
     </div>
     <div class="list-body" id="list-body"></div>
+    <div id="photo-pending-bar" style="display:none;padding:10px 14px;background:#fff8e1;border-top:1px solid #eee;align-items:center;justify-content:space-between;gap:10px">
+      <span style="font-size:12.5px;color:#7a5c00" id="photo-pending-txt">0 photo(s) en attente de décodage</span>
+      <button class="btn btn-outline" style="flex:none;padding:8px 12px;font-size:12px" onclick="exporterPhotos()">Exporter</button>
+    </div>
     <div style="padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:#fff;display:flex;gap:8px;border-top:1px solid #eee">
       <button class="btn" style="background:#fce4ec;color:#c62828" onclick="clearAll()"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13"/><path d="M10 11v6M14 11v6"/></svg> Effacer</button>
       <button class="btn btn-outline" onclick="saveSessionManually()"><svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z"/><path d="M8 4v5h7V4"/><path d="M8 21v-6h8v6"/></svg> Sauver</button>
@@ -1138,6 +1157,138 @@ async function lookupEAN(ean){
 }
 
 // ════════════════════════════════════════
+// PHOTO D'ÉTIQUETTE (décodage différé, au bureau)
+// ════════════════════════════════════════
+// Plus rapide sur le terrain qu'un scan qui doit réussir en direct : on prend
+// juste la photo, rangée par meuble/plateau/facings via le nom de fichier, et
+// le décodage du code EAN se fait plus tard (zbar + secours IA vision, voir
+// outils/03-scanner-mobile/scripts/decoder_photos_etiquettes.py).
+const PHOTO_DB_NAME = 'merchi_photos_v1';
+let photoPendingBlob = null;
+
+function openPhotoDB(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(PHOTO_DB_NAME, 1);
+    req.onupgradeneeded = () => { req.result.createObjectStore('photos', {keyPath: 'id'}); };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function savePhotoRecord(record){
+  const db = await openPhotoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('photos', 'readwrite');
+    tx.objectStore('photos').put(record);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function getAllPhotoRecords(){
+  const db = await openPhotoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('photos', 'readonly');
+    const req = tx.objectStore('photos').getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function clearPhotoRecords(){
+  const db = await openPhotoDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('photos', 'readwrite');
+    tx.objectStore('photos').clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function capturerPhotoEtiquette(){
+  const video = document.querySelector('#cam-video-wrap video');
+  if(!video || !video.videoWidth){ toast('Caméra non prête', 'red'); return; }
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  photoPendingBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.75));
+  if(!photoPendingBlob){ toast('Échec de la capture', 'red'); return; }
+  $('inp-photo-facings').value = '1';
+  openModal('modal-photo');
+  setTimeout(()=>$('inp-photo-facings').focus(), 200);
+}
+function annulerPhoto(){
+  photoPendingBlob = null;
+  closeModal('modal-photo');
+}
+async function confirmPhoto(){
+  if(!photoPendingBlob) return;
+  const facings = Number.parseInt($('inp-photo-facings').value, 10);
+  if(!Number.isInteger(facings) || facings < 1){ toast('Facings invalides', 'red'); return; }
+
+  const k = baseKey();
+  const dejaSur = (await getAllPhotoRecords()).filter(p => p.meuble===k && p.plateau===M.plateauActif).length;
+  const seq = String(dejaSur + 1).padStart(2, '0');
+  const officine = (ACCESS_OFFICINE || 'officine').replace(/\s+/g, '-');
+  const nomFichier = `${officine}_${k}_P${M.plateauActif}_${seq}_facings${facings}.jpg`;
+
+  await savePhotoRecord({
+    id: `${Date.now()}_${Math.random().toString(36).slice(2)}`,
+    blob: photoPendingBlob,
+    meuble: k, plateau: M.plateauActif, facings,
+    nomFichier, date: new Date().toISOString(),
+  });
+
+  photoPendingBlob = null;
+  closeModal('modal-photo');
+  vibrate(60); beep();
+  toast(`Photo enregistrée · ${dejaSur + 1} sur ce plateau`, 'green');
+  refreshPhotoBar();
+}
+
+async function refreshPhotoBar(){
+  const bar = $('photo-pending-bar');
+  const txt = $('photo-pending-txt');
+  if(!bar || !txt) return;
+  try{
+    const all = await getAllPhotoRecords();
+    if(all.length === 0){ bar.style.display = 'none'; return; }
+    bar.style.display = 'flex';
+    txt.textContent = `${all.length} photo${all.length>1?'s':''} en attente de décodage`;
+  }catch(e){}
+}
+
+async function exporterPhotos(){
+  let all;
+  try{ all = await getAllPhotoRecords(); }catch(e){ toast('Erreur de lecture des photos', 'red'); return; }
+  if(!all || all.length === 0){ toast('Aucune photo à exporter', 'red'); return; }
+
+  if(typeof fflate === 'undefined'){
+    toast('Chargement de l\'outil d\'export…');
+    await new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js';
+      s.onload = resolve;
+      s.onerror = () => { toast('Chargement impossible (connexion internet requise)', 'red'); resolve(); };
+      document.head.appendChild(s);
+    });
+    if(typeof fflate === 'undefined') return;
+  }
+
+  const files = {};
+  for(const p of all){
+    files[p.nomFichier] = new Uint8Array(await p.blob.arrayBuffer());
+  }
+  const zipped = fflate.zipSync(files, {level: 0});
+  const blob = new Blob([zipped], {type: 'application/zip'});
+  const url = URL.createObjectURL(blob);
+  const dt = new Date().toISOString().slice(0, 10);
+  const officine = (ACCESS_OFFICINE || 'officine').replace(/\s+/g, '-');
+  const a = document.createElement('a');
+  a.href = url; a.download = `photos_etiquettes_${officine}_${dt}.zip`; a.click();
+  URL.revokeObjectURL(url);
+  toast(`${all.length} photo(s) exportée(s)`, 'green');
+}
+
+// ════════════════════════════════════════
 // LECTURE DU NUMÉRO EAN IMPRIMÉ (OCR) — secours si le code-barres ne scanne pas
 // ════════════════════════════════════════
 let ocrWorker = null;
@@ -1351,6 +1502,7 @@ async function addManual(){
 // LISTE
 // ════════════════════════════════════════
 function showList(){
+  refreshPhotoBar();
   const body = $('list-body');
   if(scanned.length === 0){
     body.innerHTML = '<div style="text-align:center;color:#aaa;padding:40px;font-style:italic">Aucun produit scanné</div>';
