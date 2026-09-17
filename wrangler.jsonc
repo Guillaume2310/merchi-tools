@@ -5,5 +5,12 @@
   "assets": {
     "directory": "./",
     "binding": "ASSETS"
-  }
+  },
+  "secrets_store_secrets": [
+    {
+      "binding": "RESEND_API_KEY",
+      "store_id": "f65ec3d2ef5349eeb9e97afb0c650122",
+      "secret_name": "RESEND_API_KEY"
+    }
+  ]
 }

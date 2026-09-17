@@ -5,9 +5,11 @@
 // et l'envoie automatiquement par email (via Resend) à
 // fichierpara@merchi-pharma.fr, en pièce jointe.
 //
-// Nécessite un secret RESEND_API_KEY configuré dans Cloudflare :
-// Workers & Pages → merchi-tools → Settings → Variables and Secrets
-// → Add → RESEND_API_KEY = <clé resend.com, commence par re_>
+// Nécessite un binding "Secrets Store" nommé RESEND_API_KEY, configuré
+// dans Cloudflare : Workers & Pages → merchi-tools → Bindings → Add →
+// Secrets Store → RESEND_API_KEY (voir secrets_store_secrets dans
+// wrangler.jsonc). Ce type de binding s'utilise avec .get() (async),
+// pas comme une simple variable texte.
 
 const DESTINATAIRE = "fichierpara@merchi-pharma.fr";
 
@@ -32,6 +34,15 @@ async function envoyerInventaire(request, env) {
   if (!env.RESEND_API_KEY) {
     return new Response(JSON.stringify({ error: "RESEND_API_KEY non configurée côté serveur" }), { status: 500, headers: cors });
   }
+  let resendApiKey;
+  try {
+    resendApiKey = await env.RESEND_API_KEY.get();
+  } catch (e) {
+    return new Response(JSON.stringify({ error: "Lecture du secret RESEND_API_KEY impossible", detail: e.message }), { status: 500, headers: cors });
+  }
+  if (!resendApiKey) {
+    return new Response(JSON.stringify({ error: "RESEND_API_KEY vide" }), { status: 500, headers: cors });
+  }
 
   let body;
   try {
@@ -49,7 +60,7 @@ async function envoyerInventaire(request, env) {
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        Authorization: `Bearer ${resendApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
