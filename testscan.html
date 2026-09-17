@@ -271,7 +271,7 @@ input:focus{outline:none;border-color:var(--teal)}
 
 <!-- BARRE HAUT -->
 <div class="top-bar">
-  <div class="logo">M</div>
+  <div class="logo" style="cursor:pointer" onclick="retourAccueil()">M</div>
   <div class="label">
     <div id="meuble-label">— Aucun meuble —</div>
     <div class="label-sub" id="plateau-label">Tape un plateau</div>
@@ -640,6 +640,7 @@ let tourStep = -1;
 
 function $(id){return document.getElementById(id);}
 function hide(id){$(id).style.display='none';}
+function retourAccueil(){ $('welcome').style.display = 'flex'; }
 function vibrate(p){if(navigator.vibrate)navigator.vibrate(p);}
 
 // ════════════════════════════════════════
