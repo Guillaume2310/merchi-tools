@@ -1732,13 +1732,46 @@ function exportData(){
     })),
   };
   const json = JSON.stringify(data, null, 2);
+  const dt = new Date().toISOString().slice(0, 10);
+  const nomFichier = `scan_merchi_${dt}.json`;
+
   const blob = new Blob([json], {type:'application/json'});
   const url = URL.createObjectURL(blob);
-  const dt = new Date().toISOString().slice(0, 10);
   const a = document.createElement('a');
-  a.href = url; a.download = `scan_merchi_${dt}.json`; a.click();
+  a.href = url; a.download = nomFichier; a.click();
   URL.revokeObjectURL(url);
   toast('Fichier téléchargé', 'green');
+
+  envoyerExportParEmail(json, nomFichier, data);
+}
+
+// ════════════════════════════════════════
+// ENVOI AUTOMATIQUE PAR EMAIL (en plus du téléchargement)
+// ════════════════════════════════════════
+function utf8VersBase64(str){
+  return btoa(unescape(encodeURIComponent(str)));
+}
+async function envoyerExportParEmail(json, nomFichier, data){
+  try{
+    const resp = await fetch('/api/envoyer-inventaire', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        nom_fichier: nomFichier,
+        contenu_base64: utf8VersBase64(json),
+        officine: data.officine,
+        date: data.date_scan,
+        nb_total: data.nb_total,
+      }),
+    });
+    if(resp.ok){
+      toast('Envoyé par email à fichierpara@merchi-pharma.fr', 'green');
+    } else {
+      toast('Envoi email échoué — le fichier reste téléchargé sur le téléphone', 'red');
+    }
+  }catch(e){
+    toast('Pas de connexion — envoi email impossible, fichier téléchargé quand même', 'red');
+  }
 }
 
 // ════════════════════════════════════════
