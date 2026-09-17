@@ -918,20 +918,16 @@ async function startCamera(){
     await qrScanner.start(
       {facingMode: {ideal: 'environment'}},
       {
-        fps: 30,
+        fps: 12,
         qrbox: (vw, vh) => ({
-          width: Math.round(Math.min(vw * 0.90, 520)),
-          height: Math.round(Math.min(vh * 0.85, 520)),
+          width: Math.round(Math.min(vw * 0.98, 620)),
+          height: Math.round(Math.min(vh * 0.85, 480)),
         }),
         formatsToSupport: formats,
-        experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true,
-        },
         videoConstraints: {
           facingMode: {ideal: 'environment'},
           width: {ideal: 1920}, height: {ideal: 1080},
           focusMode: 'continuous',
-          advanced: [{focusDistance: 0.2}],
         },
       },
       (decodedText) => {
