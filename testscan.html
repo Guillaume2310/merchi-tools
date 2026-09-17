@@ -516,6 +516,7 @@ input:focus{outline:none;border-color:var(--teal)}
       </div>
     </div>
     <div class="list-body" id="list-body"></div>
+    <div id="envoi-status-bar" style="display:none;padding:10px 14px;border-top:1px solid #eee;align-items:center;gap:8px;font-size:12.5px;font-weight:600"></div>
     <div id="photo-pending-bar" style="display:none;padding:10px 14px;background:#fff8e1;border-top:1px solid #eee;align-items:center;justify-content:space-between;gap:10px;cursor:pointer" onclick="showPhotoList()">
       <span style="font-size:12.5px;color:#7a5c00" id="photo-pending-txt">0 photo(s) en attente de décodage</span>
       <span style="font-size:12px;color:#7a5c00;font-weight:700;flex:none">Gérer →</span>
@@ -1626,6 +1627,7 @@ async function addManual(){
 // ════════════════════════════════════════
 function showList(){
   refreshPhotoBar();
+  renderEnvoiStatus();
   const body = $('list-body');
   if(scanned.length === 0){
     body.innerHTML = '<div style="text-align:center;color:#aaa;padding:40px;font-style:italic">Aucun produit scanné</div>';
@@ -1753,7 +1755,28 @@ function exportData(){
 function utf8VersBase64(str){
   return btoa(unescape(encodeURIComponent(str)));
 }
+
+let dernierEnvoiStatut = null; // {etat: 'attente'|'ok'|'ko', texte, heure}
+function setEnvoiStatus(etat, texte){
+  dernierEnvoiStatut = {etat, texte, heure: new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})};
+  renderEnvoiStatus();
+}
+function renderEnvoiStatus(){
+  const bar = $('envoi-status-bar');
+  if(!bar) return;
+  if(!dernierEnvoiStatut){ bar.style.display = 'none'; return; }
+  const {etat, texte, heure} = dernierEnvoiStatut;
+  const couleurs = {ok: ['#e8f5e9', '#2e7d32'], ko: ['#ffebee', '#c62828'], attente: ['#e3f2fd', '#1565c0']};
+  const [bg, fg] = couleurs[etat] || couleurs.attente;
+  const icone = etat === 'ok' ? '✓' : etat === 'ko' ? '✕' : '…';
+  bar.style.display = 'flex';
+  bar.style.background = bg;
+  bar.style.color = fg;
+  bar.textContent = `${icone} ${texte} (${heure})`;
+}
+
 async function envoyerExportParEmail(json, nomFichier, data){
+  setEnvoiStatus('attente', "Envoi de l'email en cours…");
   try{
     const resp = await fetch('/api/envoyer-inventaire', {
       method: 'POST',
@@ -1767,11 +1790,14 @@ async function envoyerExportParEmail(json, nomFichier, data){
       }),
     });
     if(resp.ok){
-      toast('Envoyé par email à fichierpara@merchi-pharma.fr', 'green');
+      setEnvoiStatus('ok', 'Email envoyé avec succès');
+      toast('Envoyé par email', 'green');
     } else {
+      setEnvoiStatus('ko', "Envoi email échoué — fichier téléchargé sur le téléphone");
       toast('Envoi email échoué — le fichier reste téléchargé sur le téléphone', 'red');
     }
   }catch(e){
+    setEnvoiStatus('ko', 'Pas de connexion — fichier téléchargé quand même');
     toast('Pas de connexion — envoi email impossible, fichier téléchargé quand même', 'red');
   }
 }
