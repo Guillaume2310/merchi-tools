@@ -1804,8 +1804,7 @@ function renderEnvoiStatus(){
 }
 
 async function envoyerExportParEmail(json, nomFichier, data){
-  setEnvoiStatus('attente', "Envoi de l'email en cours…");
-  let messageAlerte = '';
+  let ok = false, messageEchec = '';
   try{
     const resp = await fetch('/api/envoyer-inventaire', {
       method: 'POST',
@@ -1819,21 +1818,26 @@ async function envoyerExportParEmail(json, nomFichier, data){
       }),
     });
     if(resp.ok){
-      setEnvoiStatus('ok', 'Email envoyé avec succès');
-      messageAlerte = `✓ FICHIER ENVOYÉ\n\n${data.nb_total} produits envoyés par email avec succès.`;
+      ok = true;
     } else {
-      setEnvoiStatus('ko', "Envoi email échoué — fichier téléchargé sur le téléphone");
-      messageAlerte = "✕ ÉCHEC DE L'ENVOI\n\nL'email n'a pas pu être envoyé. Le fichier reste téléchargé sur le téléphone — préviens Guillaume.";
+      messageEchec = "✕ ÉCHEC DE L'ENVOI\n\nL'email n'a pas pu être envoyé. Le fichier reste téléchargé sur le téléphone — préviens Guillaume.";
     }
   }catch(e){
-    setEnvoiStatus('incertain', 'Envoi incertain — retape sur Exporter');
-    messageAlerte = "⚠️ ENVOI INCERTAIN\n\nLa connexion a coupé avant la confirmation. Retape simplement sur \"Exporter\" pour être sûr — pas de souci si ça part deux fois, mieux vaut ça qu'un fichier manquant.";
+    messageEchec = "⚠️ ENVOI INCERTAIN\n\nLa connexion a coupé avant la confirmation. Retape simplement sur \"Exporter\" pour être sûr — pas de souci si ça part deux fois, mieux vaut ça qu'un fichier manquant.";
   }
   exportEnCours = false;
   const btn = $('btn-export'), btnTxt = $('btn-export-txt');
   if(btn) btn.disabled = false;
   if(btnTxt) btnTxt.textContent = 'Exporter';
-  alert(messageAlerte);
+
+  if(ok){
+    setEnvoiStatus('ok', 'Email envoyé avec succès');
+    toast('✓ Fichier envoyé', 'green');
+    closeModal('modal-list');
+  } else {
+    setEnvoiStatus(messageEchec.includes('INCERTAIN') ? 'incertain' : 'ko', messageEchec.split('\n\n')[1] || 'Échec de l\'envoi');
+    alert(messageEchec); // vrai problème : on garde une alerte bloquante, et on reste sur la liste pour pouvoir réessayer
+  }
 }
 
 // ════════════════════════════════════════
