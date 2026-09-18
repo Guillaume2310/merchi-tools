@@ -1,4 +1,4 @@
-const CACHE = 'merchi-scan-v4-2026-09-18';
+const CACHE = 'merchi-scan-v5-2026-09-18';
 const ASSETS = [
   './testscan.html',
   './lib/html5-qrcode.min.js',

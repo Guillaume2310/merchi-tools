@@ -1732,7 +1732,7 @@ function clearAll(){
 // EXPORT
 // ════════════════════════════════════════
 let exportEnCours = false;
-function exportData(){
+async function exportData(){
   if(scanned.length === 0){toast('Rien à exporter', 'red'); return;}
   if(exportEnCours){toast('Envoi déjà en cours, patiente…', 'red'); return;}
   exportEnCours = true;
@@ -1767,14 +1767,23 @@ function exportData(){
   const dt = new Date().toISOString().slice(0, 10);
   const nomFichier = `scan_merchi_${dt}.json`;
 
+  // L'envoi email part EN PREMIER, avant le téléchargement local : sur iPhone,
+  // déclencher un téléchargement de fichier (a.click()) ouvre une fenêtre système
+  // qui interrompt le JS de la page et coupe le fetch en cours — c'était la cause
+  // du message d'échec systématique alors que rien n'était encore parti.
+  const envoiOk = await envoyerExportParEmail(json, nomFichier, data);
+
   const blob = new Blob([json], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = nomFichier; a.click();
   URL.revokeObjectURL(url);
-  toast('Fichier téléchargé', 'green');
 
-  envoyerExportParEmail(json, nomFichier, data);
+  if(envoiOk){
+    setEnvoiStatus('ok', 'Email envoyé avec succès');
+    toast('✓ Fichier envoyé', 'green');
+    closeModal('modal-list');
+  }
 }
 
 // ════════════════════════════════════════
@@ -1830,14 +1839,11 @@ async function envoyerExportParEmail(json, nomFichier, data){
   if(btn) btn.disabled = false;
   if(btnTxt) btnTxt.textContent = 'Exporter';
 
-  if(ok){
-    setEnvoiStatus('ok', 'Email envoyé avec succès');
-    toast('✓ Fichier envoyé', 'green');
-    closeModal('modal-list');
-  } else {
+  if(!ok){
     setEnvoiStatus(messageEchec.includes('INCERTAIN') ? 'incertain' : 'ko', messageEchec.split('\n\n')[1] || 'Échec de l\'envoi');
     alert(messageEchec); // vrai problème : on garde une alerte bloquante, et on reste sur la liste pour pouvoir réessayer
   }
+  return ok;
 }
 
 // ════════════════════════════════════════
