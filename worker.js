@@ -64,8 +64,10 @@ async function envoyerInventaire(request, env, ctx) {
       sender: { name: "Scanner Merchi", email: EXPEDITEUR },
       to: [{ email: DESTINATAIRE }],
       subject: `Inventaire scanner — ${officine || "officine"} — ${date || ""}`,
-      textContent: `Export automatique du scanner Merchi.\n\nOfficine : ${officine || "?"}\nDate : ${date || "?"}\nProduits : ${nb_total ?? "?"}\nFichier joint : ${nom_fichier}`,
-      attachment: [{ name: nom_fichier, content: contenu_base64 }],
+      textContent: `Export automatique du scanner Merchi.\n\nOfficine : ${officine || "?"}\nDate : ${date || "?"}\nProduits : ${nb_total ?? "?"}\nFichier joint : ${nom_fichier} (renommé en .txt, Brevo n'accepte pas les pièces jointes .json — le contenu est identique, juste renommer l'extension en .json pour le réutiliser)`,
+      // Brevo refuse les pièces jointes .json ("Unsupported file format")
+      // — on renomme en .txt, contenu strictement identique.
+      attachment: [{ name: nom_fichier.replace(/\.json$/i, ".txt"), content: contenu_base64 }],
     }),
   }).then(async (resp) => {
     if (!resp.ok) {
