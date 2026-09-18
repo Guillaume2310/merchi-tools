@@ -17,18 +17,18 @@
 const DESTINATAIRE = "guillaume.strateva@gmail.com";
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (url.pathname === "/api/envoyer-inventaire" && request.method === "POST") {
-      return envoyerInventaire(request, env);
+      return envoyerInventaire(request, env, ctx);
     }
 
     return env.ASSETS.fetch(request);
   },
 };
 
-async function envoyerInventaire(request, env) {
+async function envoyerInventaire(request, env, ctx) {
   const cors = {
     "Access-Control-Allow-Origin": "*",
     "Content-Type": "application/json",
@@ -51,29 +51,35 @@ async function envoyerInventaire(request, env) {
     return new Response(JSON.stringify({ error: "nom_fichier ou contenu_base64 manquant" }), { status: 400, headers: cors });
   }
 
-  try {
-    const resp = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "Scanner Merchi <onboarding@resend.dev>",
-        to: DESTINATAIRE,
-        subject: `Inventaire scanner — ${officine || "officine"} — ${date || ""}`,
-        text: `Export automatique du scanner Merchi.\n\nOfficine : ${officine || "?"}\nDate : ${date || "?"}\nProduits : ${nb_total ?? "?"}\nFichier joint : ${nom_fichier}`,
-        attachments: [{ filename: nom_fichier, content: contenu_base64 }],
-      }),
-    });
-
+  // On répond IMMÉDIATEMENT au téléphone (pas d'attente du round-trip
+  // Resend, qui prend quelques secondes) — si l'écran s'éteint ou que
+  // l'appli passe en arrière-plan pendant cette attente, iOS peut couper
+  // la connexion et faire croire à un échec alors que l'email est déjà
+  // parti. L'envoi réel continue en arrière-plan côté Cloudflare via
+  // ctx.waitUntil, indépendamment de ce que fait le téléphone ensuite.
+  const envoiResend = fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "Scanner Merchi <onboarding@resend.dev>",
+      to: DESTINATAIRE,
+      subject: `Inventaire scanner — ${officine || "officine"} — ${date || ""}`,
+      text: `Export automatique du scanner Merchi.\n\nOfficine : ${officine || "?"}\nDate : ${date || "?"}\nProduits : ${nb_total ?? "?"}\nFichier joint : ${nom_fichier}`,
+      attachments: [{ filename: nom_fichier, content: contenu_base64 }],
+    }),
+  }).then(async (resp) => {
     if (!resp.ok) {
       const detail = await resp.text();
-      return new Response(JSON.stringify({ error: "Envoi Resend échoué", detail }), { status: 502, headers: cors });
+      console.error("Envoi Resend échoué", detail);
     }
+  }).catch((e) => {
+    console.error("Erreur envoi Resend", e.message);
+  });
 
-    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: cors });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: cors });
-  }
+  ctx.waitUntil(envoiResend);
+
+  return new Response(JSON.stringify({ ok: true, accepted: true }), { status: 200, headers: cors });
 }
