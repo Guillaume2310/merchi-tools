@@ -1,20 +1,17 @@
-// worker.js — Merchi (redeploy pour prise en compte du secret RESEND_API_KEY)
+// worker.js — Merchi
 // ─────────────────────────────────────────────────────────────
 // Sert le site statique (scanner) normalement, et ajoute un point
 // d'entrée /api/envoyer-inventaire qui reçoit un export du scanner
-// et l'envoie automatiquement par email (via Resend) à
+// et l'envoie automatiquement par email (via Brevo) à
 // fichierpara@merchi-pharma.fr, en pièce jointe.
 //
-// Nécessite un secret RESEND_API_KEY défini via :
-//   npx wrangler secret put RESEND_API_KEY
-// (méthode CLI classique — indépendante de l'interface "Secrets Store"
-// du dashboard, qui n'a pas fonctionné de manière fiable)
+// Nécessite un secret BREVO_API_KEY défini via :
+//   npx wrangler secret put BREVO_API_KEY
+// (méthode CLI classique — voir historique : l'interface "Secrets Store"
+// du dashboard Cloudflare n'a pas fonctionné de manière fiable)
 
-// Temporaire : Resend (compte gratuit, domaine merchi-pharma.fr pas encore
-// vérifié) n'autorise l'envoi qu'à l'adresse du compte Resend lui-même.
-// Basculer vers fichierpara@merchi-pharma.fr une fois le domaine vérifié
-// sur resend.com/domains.
-const DESTINATAIRE = "guillaume.strateva@gmail.com";
+const DESTINATAIRE = "fichierpara@merchi-pharma.fr";
+const EXPEDITEUR = "fichierpara@merchi-pharma.fr"; // vérifié + domaine authentifié sur Brevo
 
 export default {
   async fetch(request, env, ctx) {
@@ -34,10 +31,10 @@ async function envoyerInventaire(request, env, ctx) {
     "Content-Type": "application/json",
   };
 
-  if (!env.RESEND_API_KEY) {
-    return new Response(JSON.stringify({ error: "RESEND_API_KEY non configurée côté serveur" }), { status: 500, headers: cors });
+  if (!env.BREVO_API_KEY) {
+    return new Response(JSON.stringify({ error: "BREVO_API_KEY non configurée côté serveur" }), { status: 500, headers: cors });
   }
-  const resendApiKey = env.RESEND_API_KEY;
+  const brevoApiKey = env.BREVO_API_KEY;
 
   let body;
   try {
@@ -51,35 +48,35 @@ async function envoyerInventaire(request, env, ctx) {
     return new Response(JSON.stringify({ error: "nom_fichier ou contenu_base64 manquant" }), { status: 400, headers: cors });
   }
 
-  // On répond IMMÉDIATEMENT au téléphone (pas d'attente du round-trip
-  // Resend, qui prend quelques secondes) — si l'écran s'éteint ou que
-  // l'appli passe en arrière-plan pendant cette attente, iOS peut couper
-  // la connexion et faire croire à un échec alors que l'email est déjà
-  // parti. L'envoi réel continue en arrière-plan côté Cloudflare via
-  // ctx.waitUntil, indépendamment de ce que fait le téléphone ensuite.
-  const envoiResend = fetch("https://api.resend.com/emails", {
+  // Réponse immédiate au téléphone (pas d'attente du round-trip Brevo,
+  // qui prend quelques secondes) — si l'écran s'éteint ou que l'app passe
+  // en arrière-plan pendant cette attente, iOS peut couper la connexion
+  // et faire croire à un échec alors que l'email est déjà parti. L'envoi
+  // réel continue en arrière-plan côté Cloudflare via ctx.waitUntil.
+  const envoiBrevo = fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${resendApiKey}`,
+      "api-key": brevoApiKey,
       "Content-Type": "application/json",
+      Accept: "application/json",
     },
     body: JSON.stringify({
-      from: "Scanner Merchi <onboarding@resend.dev>",
-      to: DESTINATAIRE,
+      sender: { name: "Scanner Merchi", email: EXPEDITEUR },
+      to: [{ email: DESTINATAIRE }],
       subject: `Inventaire scanner — ${officine || "officine"} — ${date || ""}`,
-      text: `Export automatique du scanner Merchi.\n\nOfficine : ${officine || "?"}\nDate : ${date || "?"}\nProduits : ${nb_total ?? "?"}\nFichier joint : ${nom_fichier}`,
-      attachments: [{ filename: nom_fichier, content: contenu_base64 }],
+      textContent: `Export automatique du scanner Merchi.\n\nOfficine : ${officine || "?"}\nDate : ${date || "?"}\nProduits : ${nb_total ?? "?"}\nFichier joint : ${nom_fichier}`,
+      attachment: [{ name: nom_fichier, content: contenu_base64 }],
     }),
   }).then(async (resp) => {
     if (!resp.ok) {
       const detail = await resp.text();
-      console.error("Envoi Resend échoué", detail);
+      console.error("Envoi Brevo échoué", detail);
     }
   }).catch((e) => {
-    console.error("Erreur envoi Resend", e.message);
+    console.error("Erreur envoi Brevo", e.message);
   });
 
-  ctx.waitUntil(envoiResend);
+  ctx.waitUntil(envoiBrevo);
 
   return new Response(JSON.stringify({ ok: true, accepted: true }), { status: 200, headers: cors });
 }
