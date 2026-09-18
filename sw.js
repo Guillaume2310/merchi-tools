@@ -1,4 +1,4 @@
-const CACHE = 'merchi-scan-v3-2026-09-11';
+const CACHE = 'merchi-scan-v4-2026-09-18';
 const ASSETS = [
   './testscan.html',
   './lib/html5-qrcode.min.js',
@@ -32,7 +32,7 @@ self.addEventListener('fetch', event => {
   const isPage = event.request.mode === 'navigate' || url.pathname.endsWith('.html');
   if(isPage){
     event.respondWith(
-      fetch(event.request)
+      fetch(event.request, {cache: 'no-store'})
         .then(response => {
           const copy = response.clone();
           caches.open(CACHE).then(cache => cache.put(event.request, copy));
