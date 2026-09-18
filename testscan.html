@@ -1767,23 +1767,25 @@ async function exportData(){
   const dt = new Date().toISOString().slice(0, 10);
   const nomFichier = `scan_merchi_${dt}.json`;
 
-  // L'envoi email part EN PREMIER, avant le téléchargement local : sur iPhone,
-  // déclencher un téléchargement de fichier (a.click()) ouvre une fenêtre système
-  // qui interrompt le JS de la page et coupe le fetch en cours — c'était la cause
-  // du message d'échec systématique alors que rien n'était encore parti.
   const envoiOk = await envoyerExportParEmail(json, nomFichier, data);
 
+  if(envoiOk){
+    // Email parti avec succès : pas besoin du fichier local, on évite la
+    // fenêtre système de téléchargement (elle interrompt le JS et retarde
+    // le retour au scanner) et on revient directement au scanner.
+    setEnvoiStatus('ok', 'Email envoyé avec succès');
+    toast('✓ Fichier envoyé', 'green');
+    closeModal('modal-list');
+    return;
+  }
+
+  // Échec réel de l'envoi : on garde le fichier en local comme filet de
+  // sécurité pour ne pas perdre les données du pharmacien.
   const blob = new Blob([json], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = nomFichier; a.click();
   URL.revokeObjectURL(url);
-
-  if(envoiOk){
-    setEnvoiStatus('ok', 'Email envoyé avec succès');
-    toast('✓ Fichier envoyé', 'green');
-    closeModal('modal-list');
-  }
 }
 
 // ════════════════════════════════════════
